@@ -462,7 +462,7 @@ router.delete('/borrar-contacto', async (req, res) => {
 
 /**
  * @swagger
- * /ver-CONTACTO:
+ * /ver-contactos:
  *   get:
  *     tags: [alerta]
  *     summary: Obtiene los CONTACTO de un usuario.
@@ -482,7 +482,7 @@ router.delete('/borrar-contacto', async (req, res) => {
  *       500:
  *         description: Error al obtener los CONTACTO.
  */
-router.get('/ver-CONTACTO', async (req, res) => {
+router.get('/ver-contactos', async (req, res) => {
   const { id_usuario } = req.query;
 
   if (!id_usuario) {
