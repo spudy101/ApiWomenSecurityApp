@@ -177,8 +177,6 @@ router.post('/guardar-ubicacion', async (req, res) => {
   }
 });
 
-module.exports = router;
-
 /**
  * @swagger
  * /obtener-alertas:
@@ -261,7 +259,6 @@ router.get('/obtener-alertas', async (req, res) => {
     });
   }
 });
-
 
 /**
  * @swagger
