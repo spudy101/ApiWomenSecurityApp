@@ -1,17 +1,22 @@
+require('dotenv').config();
 const express = require('express');
 const { admin, db } = require('../config/firebase'); // Importamos db desde firebase.js
 const axios = require('axios');
 const router = express.Router();
 
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const client = require('twilio')(accountSid, authToken);
+
 // Clave de la API de Google Maps
-const GOOGLE_MAPS_API_KEY = 'AIzaSyBYwdJBx7xjiM2Vmelqa0DEfPJAeO0GI24';
+const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 
 /**
  * @swagger
  * tags:
  *   name: alerta
- *   description: Operaciones de generacion de alertas en el maps
-*/
+ *   description: Operaciones de generación de alertas en el maps
+ */
 
 /**
  * @swagger
@@ -74,32 +79,12 @@ const GOOGLE_MAPS_API_KEY = 'AIzaSyBYwdJBx7xjiM2Vmelqa0DEfPJAeO0GI24';
  *                   example: "GRgX8V2fKcC82eaP6Aov"
  *       400:
  *         description: Error en la validación de los campos obligatorios.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "Los campos 'id_usuario', 'latitud', 'longitud', 'id_gravedad' y 'mensaje' son obligatorios."
  *       500:
  *         description: Error interno al guardar la ubicación o alerta.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "Error al guardar la ubicación y alerta."
- *                 error:
- *                   type: string
- *                   example: "Error de conexión con Firestore."
  */
 router.post('/guardar-ubicacion', async (req, res) => {
   const { id_usuario, latitud, longitud, id_gravedad, mensaje } = req.body;
 
-  // Validar que los campos obligatorios están presentes
   if (!id_usuario || !latitud || !longitud || !id_gravedad || !mensaje) {
     return res.status(400).json({
       message: "Los campos 'id_usuario', 'latitud', 'longitud', 'id_gravedad' y 'mensaje' son obligatorios."
@@ -111,65 +96,75 @@ router.post('/guardar-ubicacion', async (req, res) => {
     const nuevaUbicacionRef = db.collection('UBICACION').doc();
     const id_ubicacion = nuevaUbicacionRef.id;
 
-    // Crear el objeto con los datos de ubicación
+    // Guardar la nueva ubicación
     const nuevaUbicacion = {
       id_ubicacion,
       id_usuario,
       latitud,
       longitud,
     };
-
-    // Guardar los datos de ubicación en Firestore
     await nuevaUbicacionRef.set(nuevaUbicacion);
 
-    // Obtener la comuna y dirección utilizando la API de Google Maps (Geocoding)
+    // Obtener comuna y dirección utilizando Google Maps
     const geocodeResponse = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitud},${longitud}&key=${GOOGLE_MAPS_API_KEY}`);
-
-    // Extraer los datos de comuna y dirección del resultado de la geocodificación
+    
     let comuna = '';
     let direccion = '';
-    
     if (geocodeResponse.data.results.length > 0) {
       const addressComponents = geocodeResponse.data.results[0].address_components;
-      
-      // Buscar el componente de la comuna
       const comunaComponent = addressComponents.find(component => component.types.includes('locality'));
       if (comunaComponent) {
         comuna = comunaComponent.long_name;
       }
-
-      // Obtener la dirección formateada
       direccion = geocodeResponse.data.results[0].formatted_address;
     }
 
-    // Si no se obtiene comuna o dirección, manejar el caso
     if (!comuna) comuna = 'Comuna no disponible';
     if (!direccion) direccion = 'Dirección no disponible';
 
-    // Registrar la alerta en la colección ALERTA
+    // Guardar la alerta en Firestore
     const nuevaAlertaRef = db.collection('ALERTA').doc();
     const id_alerta = nuevaAlertaRef.id;
+    const mensaje_nuevo = `${mensaje}. Estimados, mi ubicación actual es ${direccion}, con latitud ${latitud} y longitud ${longitud}. Solicito asistencia urgente o notificación a las autoridades competentes.`;
 
-    mensaje_nuevo = `${mensaje}. Estimados, mi ubicación actual es ${direccion}, con latitud ${latitud} y longitud ${longitud}. Solicito asistencia urgente o notificación a las autoridades competentes. Gracias por su pronta atención.`;
-
-    // Crear el objeto con los datos de alerta
     const nuevaAlerta = {
       id_alerta,
       comuna,
       direccion,
       fecha: admin.firestore.Timestamp.now(),
       id_gravedad,
-      id_ubicacion, // Referencia a la ubicación creada
+      id_ubicacion,
       id_usuario,
-      mensaje: mensaje_nuevo, // Asignar el mensaje concatenado
+      mensaje: mensaje_nuevo,
     };
-
-    // Guardar los datos de alerta en Firestore
     await nuevaAlertaRef.set(nuevaAlerta);
 
-    // Responder con éxito, devolviendo ambos IDs
+    // Buscar los contactos del usuario en la colección 'contactos'
+    const contactosSnapshot = await db.collection('CONTACTO')
+      .where('id_usuario', '==', id_usuario)
+      .get();
+
+    if (!contactosSnapshot.empty) {
+      const contactos = contactosSnapshot.docs.map(doc => doc.data());
+
+      // Enviar WhatsApp a cada contacto
+      for (const contacto of contactos) {
+        if (contacto.celular) {
+          const mensajeWhatsApp = mensaje_nuevo
+          
+          // Enviar mensaje de WhatsApp a través de Twilio
+          await client.messages.create({
+            from: `whatsapp:+14155238886`,
+            to: `whatsapp:+56${contacto.celular}`, // Asegúrate de que el número incluya el código del país
+            body: mensajeWhatsApp,
+          });
+          console.log(`Mensaje de WhatsApp enviado a ${contacto.celular}`);
+        }
+      }
+    }
+
     return res.status(200).json({
-      message: "Ubicación y alerta guardadas exitosamente.",
+      message: "Ubicación y alerta guardadas exitosamente. Mensajes de WhatsApp enviados a los contactos.",
       id_ubicacion,
       id_alerta,
     });
@@ -182,13 +177,14 @@ router.post('/guardar-ubicacion', async (req, res) => {
   }
 });
 
+module.exports = router;
+
 /**
  * @swagger
  * /obtener-alertas:
  *   get:
  *     tags: [alerta]
  *     summary: Obtiene todas las alertas o una alerta específica junto con la ubicación y gravedad.
- *     description: Devuelve todas las alertas o una alerta específica según el ID proporcionado. Incluye la información de las tablas `UBICACION` y `GRAVEDAD`.
  *     parameters:
  *       - name: id_alerta
  *         in: query
@@ -196,62 +192,9 @@ router.post('/guardar-ubicacion', async (req, res) => {
  *         description: ID de la alerta para buscar una alerta específica.
  *         schema:
  *           type: string
- *           example: "1bfjj6FN8VscsUt1ND24"
  *     responses:
  *       200:
  *         description: Alerta(s) obtenida(s) exitosamente.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 alertas:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id_alerta:
- *                         type: string
- *                         description: ID de la alerta.
- *                         example: "1bfjj6FN8VscsUt1ND24"
- *                       comuna:
- *                         type: string
- *                         description: Comuna donde se generó la alerta.
- *                         example: "Puente Alto"
- *                       direccion:
- *                         type: string
- *                         description: Dirección relacionada con la alerta.
- *                         example: "Av. Concha y Toro 2557, Puente Alto, Chile"
- *                       fecha:
- *                         type: string
- *                         description: Fecha y hora de la alerta.
- *                         example: "2024-09-19T04:19:02.921Z"
- *                       mensaje:
- *                         type: string
- *                         description: Mensaje de la alerta.
- *                         example: "¡Ayuda! Juanito Perez está en peligro."
- *                       ubicacion:
- *                         type: object
- *                         properties:
- *                           latitud:
- *                             type: number
- *                             description: Latitud de la ubicación.
- *                             example: -33.598427
- *                           longitud:
- *                             type: number
- *                             description: Longitud de la ubicación.
- *                             example: -70.578443
- *                       gravedad:
- *                         type: object
- *                         properties:
- *                           id_gravedad:
- *                             type: string
- *                             description: ID de la gravedad.
- *                             example: "jCF8iApdZ0s5wdgkjQ2p"
- *                           descripcion:
- *                             type: string
- *                             description: Descripción de la gravedad.
- *                             example: "Alta"
  *       404:
  *         description: No se encontraron alertas.
  *       500:
@@ -316,6 +259,261 @@ router.get('/obtener-alertas', async (req, res) => {
       message: "Error al obtener las alertas.",
       error: error.message,
     });
+  }
+});
+
+
+/**
+ * @swagger
+ * /guardar-contacto:
+ *   post:
+ *     tags: [alerta]
+ *     summary: Guarda un contacto.
+ *     description: Permite guardar un nuevo contacto para un usuario.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - nombres
+ *               - apellidos
+ *               - celular
+ *               - email
+ *               - id_usuario
+ *             properties:
+ *               nombres:
+ *                 type: string
+ *                 description: Nombres del contacto.
+ *               apellidos:
+ *                 type: string
+ *                 description: Apellidos del contacto.
+ *               celular:
+ *                 type: string
+ *                 description: Celular del contacto.
+ *               email:
+ *                 type: string
+ *                 description: Email del contacto.
+ *               id_usuario:
+ *                 type: string
+ *                 description: ID del usuario que registra el contacto.
+ *     responses:
+ *       201:
+ *         description: Contacto agregado exitosamente.
+ *       400:
+ *         description: Error de validación.
+ *       500:
+ *         description: Error interno al agregar el contacto.
+ */
+router.post('/guardar-contacto', async (req, res) => {
+  const { nombres, apellidos, celular, email, id_usuario } = req.body;
+
+  if (!nombres || !apellidos || !celular || !email || !id_usuario) {
+    return res.status(400).json({ message: "Todos los campos son obligatorios" });
+  }
+
+  try {
+    // Referencia a la colección "CONTACTO"
+    const CONTACTORef = db.collection('CONTACTO');
+
+    // Crear un nuevo ID de contacto
+    const nuevoContactoRef = CONTACTORef.doc(); 
+    const id_contacto = nuevoContactoRef.id;
+
+    // Datos del nuevo contacto
+    const nuevoContacto = {
+      id_contacto,    // ID generado automáticamente
+      nombres,
+      apellidos,
+      celular,
+      email,
+      id_usuario,     // ID del usuario que está registrando el contacto
+    };
+
+    // Insertar el documento en Firestore
+    await nuevoContactoRef.set(nuevoContacto);
+
+    return res.status(201).json({
+      message: "Contacto agregado exitosamente",
+      contacto: nuevoContacto
+    });
+  } catch (error) {
+    console.error("Error al agregar el contacto:", error);
+    return res.status(500).json({ message: "Error al agregar el contacto", error });
+  }
+});
+
+/**
+ * @swagger
+ * /editar-contacto:
+ *   put:
+ *     tags: [alerta]
+ *     summary: Edita un contacto existente.
+ *     description: Actualiza los datos de un contacto existente.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - id_contacto
+ *               - nombres
+ *               - apellidos
+ *               - celular
+ *               - email
+ *             properties:
+ *               id_contacto:
+ *                 type: string
+ *                 description: El ID del contacto que se va a editar.
+ *               nombres:
+ *                 type: string
+ *               apellidos:
+ *                 type: string
+ *               celular:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Contacto actualizado exitosamente.
+ *       404:
+ *         description: Contacto no encontrado.
+ *       500:
+ *         description: Error al actualizar el contacto.
+ */
+router.put('/editar-contacto', async (req, res) => {
+  const { nombres, apellidos, celular, email, id_contacto } = req.body;
+
+  if (!nombres || !apellidos || !celular || !email) {
+    return res.status(400).json({ message: "Todos los campos (nombres, apellidos, celular, email) son obligatorios" });
+  }
+
+  try {
+    const contactoRef = db.collection('CONTACTO').doc(id_contacto);
+    const contactoDoc = await contactoRef.get();
+
+    if (!contactoDoc.exists) {
+      return res.status(404).json({ message: `No se encontró el contacto con id: ${id_contacto}` });
+    }
+
+    const datosActualizados = { nombres, apellidos, celular, email };
+
+    await contactoRef.update(datosActualizados);
+
+    return res.status(200).json({
+      message: 'Contacto actualizado exitosamente',
+      contacto: { id_contacto, ...datosActualizados }
+    });
+  } catch (error) {
+    console.error("Error al actualizar el contacto:", error);
+    return res.status(500).json({ message: "Error al actualizar el contacto", error });
+  }
+});
+
+/**
+ * @swagger
+ * /borrar-contacto:
+ *   delete:
+ *     tags: [alerta]
+ *     summary: Elimina un contacto.
+ *     description: Elimina un contacto existente de la base de datos.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - id_contacto
+ *             properties:
+ *               id_contacto:
+ *                 type: string
+ *                 description: El ID del contacto que se va a eliminar.
+ *     responses:
+ *       200:
+ *         description: Contacto eliminado exitosamente.
+ *       404:
+ *         description: Contacto no encontrado.
+ *       500:
+ *         description: Error al eliminar el contacto.
+ */
+router.delete('/borrar-contacto', async (req, res) => {
+  const { id_contacto } = req.body;
+
+  if (!id_contacto) {
+    return res.status(400).json({ message: "El 'id_contacto' es requerido" });
+  }
+
+  try {
+    const contactoRef = db.collection('CONTACTO').doc(id_contacto);
+    const contactoDoc = await contactoRef.get();
+
+    if (!contactoDoc.exists) {
+      return res.status(404).json({ message: `No se encontró el contacto con id: ${id_contacto}` });
+    }
+
+    await contactoRef.delete();
+
+    return res.status(200).json({ message: 'Contacto eliminado exitosamente' });
+  } catch (error) {
+    console.error("Error al eliminar el contacto:", error);
+    return res.status(500).json({ message: "Error al eliminar el contacto", error });
+  }
+});
+
+/**
+ * @swagger
+ * /ver-CONTACTO:
+ *   get:
+ *     tags: [alerta]
+ *     summary: Obtiene los CONTACTO de un usuario.
+ *     description: Devuelve todos los CONTACTO asociados con un usuario específico.
+ *     parameters:
+ *       - name: id_usuario
+ *         in: query
+ *         required: true
+ *         description: El ID del usuario.
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: CONTACTO obtenidos exitosamente.
+ *       404:
+ *         description: No se encontraron CONTACTO para el usuario.
+ *       500:
+ *         description: Error al obtener los CONTACTO.
+ */
+router.get('/ver-CONTACTO', async (req, res) => {
+  const { id_usuario } = req.query;
+
+  if (!id_usuario) {
+    return res.status(400).json({ message: "El 'id_usuario' es requerido" });
+  }
+
+  try {
+    // Filtrar los CONTACTO por id_usuario
+    const CONTACTOSnapshot = await db.collection('CONTACTO')
+      .where('id_usuario', '==', id_usuario)
+      .get();
+
+    if (CONTACTOSnapshot.empty) {
+      return res.status(404).json({ message: `No se encontraron CONTACTO para el usuario con id: ${id_usuario}` });
+    }
+
+    const CONTACTO = CONTACTOSnapshot.docs.map(doc => ({
+      id_contacto: doc.id,
+      ...doc.data()
+    }));
+
+    return res.status(200).json({
+      message: 'CONTACTO obtenidos exitosamente',
+      CONTACTO
+    });
+  } catch (error) {
+    console.error("Error al obtener los CONTACTO:", error);
+    return res.status(500).json({ message: "Error al obtener los CONTACTO", error });
   }
 });
 
