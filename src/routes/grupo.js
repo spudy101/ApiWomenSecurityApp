@@ -556,12 +556,12 @@ router.post("/invitar-usuario", upload.none(), async (req, res) => {
 // Ver invitaciones
 /**
  * @swagger
- * /ver-invitaciones/{id_usuario}:
+ * /ver-invitaciones:
  *   get:
  *     tags: [grupo]
  *     summary: Ver las invitaciones pendientes para un usuario.
  *     parameters:
- *       - in: path
+ *       - in: query
  *         name: id_usuario
  *         required: true
  *         description: El ID del usuario para obtener las invitaciones pendientes.
@@ -575,8 +575,8 @@ router.post("/invitar-usuario", upload.none(), async (req, res) => {
  *       500:
  *         description: Error al obtener las invitaciones.
  */
-router.get('/ver-invitaciones/:id_usuario', async (req, res) => {
-  const { id_usuario } = req.params;
+router.get('/ver-invitaciones', async (req, res) => {
+  const { id_usuario } = req.query;
 
   if (!id_usuario) {
     return res.status(400).json({ message: "El campo 'id_usuario' es requerido" });
