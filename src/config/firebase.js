@@ -1,23 +1,17 @@
-// const admin = require('firebase-admin');
-// const path = require('path');
-
-// const serviceAccount = require(path.join(__dirname, '../firebase-config.json')); // Asegúrate de que la ruta sea correcta
-
-// admin.initializeApp({
-//   credential: admin.credential.cert(serviceAccount),
-//   storageBucket: 'women-security-app-31986.appspot.com', // Cambia esto por tu bucket real
-// });
-
-// const db = admin.firestore();
-// const bucket = admin.storage().bucket(); // Ya no necesitas pasar el bucket aquí si está en initializeApp()
-
-// module.exports = { admin, db, bucket };
-
-
+require('dotenv').config();
 const admin = require('firebase-admin');
 
-// No necesitas el archivo de credenciales en Cloud Run
+// Verifica que las variables de entorno se carguen correctamente
+if (!process.env.FIREBASE_PRIVATE_KEY) {
+  throw new Error('FIREBASE_PRIVATE_KEY no está definida. Verifica tu archivo .env');
+}
+
 admin.initializeApp({
+  credential: admin.credential.cert({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'), // Reemplazar los saltos de línea
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+  }),
   storageBucket: 'women-security-app-31986.appspot.com', // Cambia esto por tu bucket real
 });
 
