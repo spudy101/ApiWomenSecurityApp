@@ -24,14 +24,16 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: "http://localhost:3000",
+        url: "https://api-women-security-app-544496114867.southamerica-west1.run.app",
       },
     ],
   },
-  apis: ["./routes/*.js"], // Ajustar la ruta para que coincida con la carpeta donde están los archivos
+  apis: ['./src/routes/*.js'], // Ajustar la ruta para que coincida con la estructura actual
 };
 
+
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
+console.log(JSON.stringify(swaggerDocs, null, 2));
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // Importar rutas
