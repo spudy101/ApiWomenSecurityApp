@@ -507,4 +507,120 @@ router.get('/ver-contactos', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /alertas-usuario/{id_usuario}:
+ *   get:
+ *     tags: [usuario_alerta]
+ *     summary: Obtiene todas las alertas de un usuario.
+ *     description: Retorna todas las alertas generadas por un usuario en particular.
+ *     parameters:
+ *       - in: query
+ *         name: id_usuario
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID del usuario.
+ *     responses:
+ *       200:
+ *         description: Lista de alertas obtenida exitosamente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Alertas obtenidas exitosamente para el usuario con id: {id_usuario}"
+ *                 alertasUsuario:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id_alerta:
+ *                         type: string
+ *                         example: "1bfjj6FN8VscsUt1ND24"
+ *                       comuna:
+ *                         type: string
+ *                         example: "Puente Alto"
+ *                       direccion:
+ *                         type: string
+ *                         example: "Av. Concha y Toro 2557..."
+ *                       fecha:
+ *                         type: string
+ *                         example: "2024-09-19T04:19:02.921Z"
+ *                       id_gravedad:
+ *                         type: string
+ *                         example: "jCF8iApdZ0s5wdgkjQ2p"
+ *                       id_ubicacion:
+ *                         type: string
+ *                         example: "ONu4nQMcsCA18rwIQNJM"
+ *                       id_usuario:
+ *                         type: string
+ *                         example: "2ME9VRJaHwOvqitEOVAHATLy33e2"
+ *                       mensaje:
+ *                         type: string
+ *                         example: "Probando redirección de mensaje..."
+ *       404:
+ *         description: No se encontraron alertas para el usuario.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "No se encontraron alertas para el usuario con id: {id_usuario}"
+ *       500:
+ *         description: Error interno al obtener las alertas del usuario.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Error al obtener las alertas del usuario."
+ *                 error:
+ *                   type: string
+ *                   example: "Descripción del error"
+ */
+router.get('/alertas-usuario', async (req, res) => {
+  const { id_usuario } = req.query;
+
+  try {
+    // Consultar todas las alertas del usuario
+    const alertasSnapshot = await db.collection('ALERTA')
+      .where('id_usuario', '==', id_usuario) // Filtrar por el id_usuario
+      .get();
+
+    if (alertasSnapshot.empty) {
+      return res.status(404).json({
+        message: `No se encontraron alertas para el usuario con id: ${id_usuario}`
+      });
+    }
+
+    // Crear una lista de alertas del usuario
+    const alertasUsuario = [];
+    alertasSnapshot.forEach(doc => {
+      alertasUsuario.push({
+        id_alerta: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    // Devolver las alertas del usuario
+    return res.status(200).json({
+      message: `Alertas obtenidas exitosamente para el usuario con id: ${id_usuario}`,
+      alertasUsuario
+    });
+  } catch (error) {
+    console.error("Error al obtener las alertas del usuario:", error);
+    return res.status(500).json({
+      message: "Error al obtener las alertas del usuario.",
+      error: error.message,
+    });
+  }
+});
+
 module.exports = router;
