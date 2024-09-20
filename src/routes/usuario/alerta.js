@@ -1,6 +1,6 @@
 require('dotenv').config();
 const express = require('express');
-const { admin, db } = require('../config/firebase'); // Importamos db desde firebase.js
+const { admin, db } = require('../../config/firebase'); // Importamos db desde firebase.js
 const axios = require('axios');
 const router = express.Router();
 
@@ -13,16 +13,9 @@ const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 
 /**
  * @swagger
- * tags:
- *   name: alerta
- *   description: Operaciones de generación de alertas en el maps
- */
-
-/**
- * @swagger
  * /guardar-ubicacion:
  *   post:
- *     tags: [alerta]
+ *     tags: [usuario_alerta]
  *     summary: Guarda una ubicación y genera una alerta.
  *     description: Guarda una ubicación en la colección "UBICACION" y genera una alerta en la colección "ALERTA", obteniendo la comuna y dirección automáticamente usando la API de Google Maps.
  *     requestBody:
@@ -181,7 +174,7 @@ router.post('/guardar-ubicacion', async (req, res) => {
  * @swagger
  * /obtener-alertas:
  *   get:
- *     tags: [alerta]
+ *     tags: [usuario_alerta]
  *     summary: Obtiene todas las alertas o una alerta específica junto con la ubicación y gravedad.
  *     parameters:
  *       - name: id_alerta
@@ -264,7 +257,7 @@ router.get('/obtener-alertas', async (req, res) => {
  * @swagger
  * /guardar-contacto:
  *   post:
- *     tags: [alerta]
+ *     tags: [usuario_alerta]
  *     summary: Guarda un contacto.
  *     description: Permite guardar un nuevo contacto para un usuario.
  *     requestBody:
@@ -345,7 +338,7 @@ router.post('/guardar-contacto', async (req, res) => {
  * @swagger
  * /editar-contacto:
  *   put:
- *     tags: [alerta]
+ *     tags: [usuario_alerta]
  *     summary: Edita un contacto existente.
  *     description: Actualiza los datos de un contacto existente.
  *     requestBody:
@@ -413,7 +406,7 @@ router.put('/editar-contacto', async (req, res) => {
  * @swagger
  * /borrar-contacto:
  *   delete:
- *     tags: [alerta]
+ *     tags: [usuario_alerta]
  *     summary: Elimina un contacto.
  *     description: Elimina un contacto existente de la base de datos.
  *     requestBody:
@@ -464,7 +457,7 @@ router.delete('/borrar-contacto', async (req, res) => {
  * @swagger
  * /ver-contactos:
  *   get:
- *     tags: [alerta]
+ *     tags: [usuario_alerta]
  *     summary: Obtiene los CONTACTO de un usuario.
  *     description: Devuelve todos los CONTACTO asociados con un usuario específico.
  *     parameters:

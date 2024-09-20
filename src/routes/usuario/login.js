@@ -1,23 +1,17 @@
+require('dotenv').config();
 const express = require('express');
-const { admin, db } = require('../config/firebase'); // Importamos admin y db desde firebase.js
+const { admin, db } = require('../../config/firebase'); // Importamos admin y db desde firebase.js
 const axios = require('axios');
 const router = express.Router();
 
 // Aquí debes poner la API Key de tu proyecto Firebase
-const FIREBASE_API_KEY = 'AIzaSyBmb3p57YglSjZlZe9qYxQvTRycgPvaAnk';
-
-/**
- * @swagger
- * tags:
- *   name: Login
- *   description: Operaciones de autenticación de usuario
- */
+const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
 /**
  * @swagger
  * /register:
  *   post:
- *     tags: [Login]
+ *     tags: [login]
  *     summary: Registra un nuevo usuario en Firebase Authentication y guarda datos en Firestore.
  *     requestBody:
  *       required: true
@@ -80,6 +74,10 @@ const FIREBASE_API_KEY = 'AIzaSyBmb3p57YglSjZlZe9qYxQvTRycgPvaAnk';
  *                 type: string
  *                 description: El ID del género del usuario.
  *                 example: "TZfnq567GbsAj9VcCFqt" 
+ *               id_municipalidad:
+ *                 type: string
+ *                 description: El ID de la municipalidad del usuario (solo en caso de ser funcionario).
+ *                 example: "jLk6tks6WFngFWQ1Zf8B" 
  *     responses:
  *       201:
  *         description: Usuario registrado exitosamente.
@@ -89,7 +87,7 @@ const FIREBASE_API_KEY = 'AIzaSyBmb3p57YglSjZlZe9qYxQvTRycgPvaAnk';
  *         description: Error al registrar el usuario.
  */
 router.post('/register', async (req, res) => {
-  const { nombre, apellido, correo, password, fecha_nacimiento, numero_telefono, rut, direccion, id_comuna, tipo_usuario, id_genero } = req.body;
+  const { nombre, apellido, correo, password, fecha_nacimiento, numero_telefono, rut, direccion, id_comuna, tipo_usuario, id_genero, id_municipalidad } = req.body;
 
   // Validación de campos obligatorios
   if (!nombre || !apellido || !correo || !password || !fecha_nacimiento || !direccion || !id_comuna || !id_genero) {
@@ -119,6 +117,7 @@ router.post('/register', async (req, res) => {
       id_comuna: id_comuna, // Añadir el campo id_comuna
       id_genero: id_genero, // Añadir el campo id_genero
       id_persona: uid, // El UID de Firebase Authentication
+      id_municipalidad: id_municipalidad || null,
     });
 
     // Asignar tipo de usuario basado en el valor recibido
@@ -173,7 +172,7 @@ router.post('/register', async (req, res) => {
  * @swagger
  * /comunas:
  *   get:
- *     tags: [Login]
+ *     tags: [login]
  *     summary: Obtiene todas las comunas de la colección COMUNA.
  *     responses:
  *       200:
@@ -219,7 +218,7 @@ router.get('/comunas', async (req, res) => {
  * @swagger
  * /generos:
  *   get:
- *     tags: [Login]
+ *     tags: [login]
  *     summary: Obtiene todos los géneros de la colección GENERO.
  *     responses:
  *       200:
@@ -266,7 +265,7 @@ router.get('/generos', async (req, res) => {
  * /login:
  *   post:
  *     summary: Autentica al usuario con email y contraseña.
- *     tags: [Login]
+ *     tags: [login]
  *     requestBody:
  *       required: true
  *       content:
@@ -376,5 +375,60 @@ router.post('/login', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/municipalidades:
+ *   get:
+ *     summary: Obtiene todas las municipalidades.
+ *     tags: [login]
+ *     description: Retorna una lista de todas las municipalidades con sus respectivos campos.
+ *     responses:
+ *       200:
+ *         description: Lista de municipalidades obtenida exitosamente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 municipalidades:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id_municipalidad:
+ *                         type: string
+ *                         description: ID de la municipalidad.
+ *                       nombre_municipalidad:
+ *                         type: string
+ *                         description: Nombre de la municipalidad.
+ *                       direccion_municipalidad:
+ *                         type: string
+ *                         description: Dirección de la municipalidad.
+ *                       id_comuna:
+ *                         type: string
+ *                         description: ID de la comuna asociada a la municipalidad.
+ *       500:
+ *         description: Error interno al obtener las municipalidades.
+ */
+router.get('/municipalidades', async (req, res) => {
+  try {
+    // Obtener todos los documentos de la colección "MUNICIPALIDAD"
+    const snapshot = await db.collection('MUNICIPALIDAD').get();
+
+    // Verificar si hay documentos en la colección
+    if (snapshot.empty) {
+      return res.status(404).json({ message: 'No se encontraron municipalidades.' });
+    }
+
+    // Crear un arreglo con todas las municipalidades
+    const municipalidades = snapshot.docs.map(doc => doc.data());
+
+    // Devolver la lista de municipalidades
+    return res.status(200).json({ municipalidades });
+  } catch (error) {
+    console.error('Error al obtener las municipalidades:', error);
+    return res.status(500).json({ message: 'Error al obtener las municipalidades', error: error.message });
+  }
+});
 
 module.exports = router;

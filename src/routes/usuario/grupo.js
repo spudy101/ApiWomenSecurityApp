@@ -1,6 +1,6 @@
 // Importaciones
 const express = require('express');
-const { admin, db, bucket } = require('../config/firebase');
+const { admin, db, bucket } = require('../../config/firebase');
 const multer = require('multer');
 const path = require('path');
 const router = express.Router();
@@ -13,19 +13,12 @@ const upload = multer({
   }
 });
 
-/**
- * @swagger
- * tags:
- *   name: grupo
- *   description: Operaciones relacionadas con la información del grupo.
- */
-
 // Crear grupo
 /**
  * @swagger
  * /crear-grupo:
  *   post:
- *     tags: [grupo]
+ *     tags: [usuario_grupo]
  *     summary: Crea un nuevo grupo y agrega automáticamente al usuario creador al grupo.
  *     description: Este endpoint permite crear un nuevo grupo y automáticamente añadir al usuario creador al grupo. También permite especificar un color de grupo, una imagen opcional y una descripción del grupo.
  *     requestBody:
@@ -129,7 +122,7 @@ router.post("/crear-grupo", upload.single('imagen'), async (req, res) => {
  * @swagger
  * /eliminar-grupo:
  *   delete:
- *     tags: [grupo]
+ *     tags: [usuario_grupo]
  *     summary: Elimina un grupo cambiando su estado a false.
  *     description: Este endpoint cambia el estado de un grupo a false en lugar de eliminarlo físicamente de la base de datos.
  *     requestBody:
@@ -183,7 +176,7 @@ router.delete("/eliminar-grupo", async (req, res) => {
  * @swagger
  * /editar-grupo:
  *   put:
- *     tags: [grupo]
+ *     tags: [usuario_grupo]
  *     summary: Edita la información de un grupo existente.
  *     description: Permite actualizar los datos de un grupo, incluyendo su nombre, color, descripción y la imagen asociada.
  *     requestBody:
@@ -269,7 +262,7 @@ router.put('/editar-grupo', upload.single('imagen'), async (req, res) => {
  * @swagger
  * /ver-grupos-creados:
  *   get:
- *     tags: [grupo]
+ *     tags: [usuario_grupo]
  *     summary: Obtiene los grupos creados por un usuario.
  *     parameters:
  *       - in: query
@@ -319,7 +312,7 @@ router.get('/ver-grupos-creados', async (req, res) => {
  * @swagger
  * /ver-grupos-usuario:
  *   get:
- *     tags: [grupo]
+ *     tags: [usuario_grupo]
  *     summary: Obtiene los grupos a los que pertenece un usuario.
  *     parameters:
  *       - in: query
@@ -383,7 +376,7 @@ router.get('/ver-grupos-usuario', async (req, res) => {
  * @swagger
  * /grupo-completo:
  *   get:
- *     tags: [grupo]
+ *     tags: [usuario_grupo]
  *     summary: Obtiene la información completa de un grupo.
  *     parameters:
  *       - in: query
@@ -460,7 +453,7 @@ router.get('/grupo-completo', async (req, res) => {
  * @swagger
  * /invitar-usuario:
  *   post:
- *     tags: [grupo]
+ *     tags: [usuario_grupo]
  *     summary: Invita a un usuario a un grupo mediante su número de teléfono.
  *     description: Permite invitar a un usuario a un grupo utilizando su número de teléfono.
  *     requestBody:
@@ -556,12 +549,12 @@ router.post("/invitar-usuario", upload.none(), async (req, res) => {
 // Ver invitaciones
 /**
  * @swagger
- * /ver-invitaciones/{id_usuario}:
+ * /ver-invitaciones:
  *   get:
- *     tags: [grupo]
+ *     tags: [usuario_grupo]
  *     summary: Ver las invitaciones pendientes para un usuario.
  *     parameters:
- *       - in: path
+ *       - in: query
  *         name: id_usuario
  *         required: true
  *         description: El ID del usuario para obtener las invitaciones pendientes.
@@ -575,8 +568,8 @@ router.post("/invitar-usuario", upload.none(), async (req, res) => {
  *       500:
  *         description: Error al obtener las invitaciones.
  */
-router.get('/ver-invitaciones/:id_usuario', async (req, res) => {
-  const { id_usuario } = req.params;
+router.get('/ver-invitaciones', async (req, res) => {
+  const { id_usuario } = req.query;
 
   if (!id_usuario) {
     return res.status(400).json({ message: "El campo 'id_usuario' es requerido" });
@@ -613,7 +606,7 @@ router.get('/ver-invitaciones/:id_usuario', async (req, res) => {
  * @swagger
  * /responder-invitacion:
  *   post:
- *     tags: [grupo]
+ *     tags: [usuario_grupo]
  *     summary: Responde a una invitación de grupo (aceptar o rechazar).
  *     requestBody:
  *       required: true
@@ -715,7 +708,7 @@ router.post("/responder-invitacion", upload.none(), async (req, res) => {
  * @swagger
  * /grupo/eliminar-usuario:
  *   post:
- *     tags: [grupo]
+ *     tags: [usuario_grupo]
  *     summary: Elimina a un usuario de un grupo.
  *     requestBody:
  *       required: true
