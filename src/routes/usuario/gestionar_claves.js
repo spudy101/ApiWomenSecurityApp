@@ -1,12 +1,12 @@
 const express = require('express');
-const { admin, db } = require('../config/firebase'); // Importamos db desde firebase.js
+const { admin, db } = require('../../config/firebase'); // Importamos db desde firebase.js
 const router = express.Router();
 
 /**
  * @swagger
  * /listar-gravedades:
  *   get:
- *     tags: [gestionar_claves]
+ *     tags: [usuario_gestionar_claves]
  *     summary: Lista todas las gravedades.
  *     description: Retorna todas las gravedades disponibles en la colección "GRAVEDAD".
  *     responses:
@@ -64,7 +64,7 @@ router.get('/listar-gravedades', async (req, res) => {
  * @swagger
  * /obtener-claves-usuario:
  *   get:
- *     tags: [gestionar_claves]
+ *     tags: [usuario_gestionar_claves]
  *     summary: Lista las claves de un usuario junto con el mensaje y la gravedad.
  *     description: Retorna todas las claves en la colección "CLAVE" relacionadas con un usuario, junto con la información del mensaje y la gravedad.
  *     parameters:
@@ -167,7 +167,7 @@ router.get('/obtener-claves-usuario', async (req, res) => {
  * @swagger
  * /guardar-clave:
  *   post:
- *     tags: [gestionar_claves]
+ *     tags: [usuario_gestionar_claves]
  *     summary: Guarda una nueva clave en la base de datos.
  *     description: Guarda los datos de clave enviados en Firestore bajo la colección "Clave".
  *     requestBody:
@@ -249,7 +249,7 @@ router.post('/guardar-clave', async (req, res) => {
  * @swagger
  * /editar-clave:
  *   put:
- *     tags: [gestionar_claves]
+ *     tags: [usuario_gestionar_claves]
  *     summary: Edita una clave existente en la base de datos.
  *     description: Permite editar los campos `id_gravedad`, `id_mensaje`, y `palabra` de una clave en Firestore.
  *     requestBody:
@@ -332,7 +332,7 @@ router.put('/editar-clave', async (req, res) => {
  * @swagger
  * /eliminar-clave:
  *   delete:
- *     tags: [gestionar_claves]
+ *     tags: [usuario_gestionar_claves]
  *     summary: Elimina una clave de la base de datos.
  *     description: Elimina una clave en Firestore de la colección "CLAVE" usando el `id_clave`.
  *     requestBody:
@@ -397,7 +397,7 @@ router.delete('/eliminar-clave', async (req, res) => {
  * @swagger
  * /obtener-mensajes:
  *   get:
- *     tags: [gestionar_claves]
+ *     tags: [usuario_gestionar_claves]
  *     summary: Obtiene los mensajes asociados a una persona.
  *     description: Retorna todos los mensajes en la colección "MENSAJE" relacionados con el ID de una persona.
  *     parameters:
@@ -478,7 +478,7 @@ router.get('/obtener-mensajes', async (req, res) => {
  * @swagger
  * /insertar-mensaje:
  *   post:
- *     tags: [gestionar_claves]
+ *     tags: [usuario_gestionar_claves]
  *     summary: Inserta un nuevo mensaje en la base de datos.
  *     description: Guarda los datos de mensaje enviados en Firestore bajo la colección "MENSAJE".
  *     requestBody:
@@ -561,7 +561,7 @@ router.post('/insertar-mensaje', async (req, res) => {
  * @swagger
  * /eliminar-mensaje:
  *   delete:
- *     tags: [gestionar_claves]
+ *     tags: [usuario_gestionar_claves]
  *     summary: Elimina un mensaje de la base de datos.
  *     description: Elimina un mensaje en Firestore de la colección "MENSAJE" usando el `id_mensaje`.
  *     requestBody:
@@ -659,7 +659,7 @@ router.delete('/eliminar-mensaje', async (req, res) => {
  * @swagger
  * /editar-mensaje:
  *   put:
- *     tags: [gestionar_claves]
+ *     tags: [usuario_gestionar_claves]
  *     summary: Edita el contenido de un mensaje existente.
  *     description: Permite editar solo el contenido del campo `mensaje` en un documento de la colección "MENSAJE". No se pueden modificar el `id_mensaje` ni el `id_persona`.
  *     requestBody:

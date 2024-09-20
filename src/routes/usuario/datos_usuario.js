@@ -1,5 +1,5 @@
 const express = require('express');
-const { admin, db, bucket } = require('../config/firebase'); // Importamos admin, db y bucket desde firebase.js
+const { admin, db, bucket } = require('../../config/firebase'); // Importamos admin, db y bucket desde firebase.js
 const multer = require('multer');
 const path = require('path');
 const router = express.Router();
@@ -14,16 +14,9 @@ const upload = multer({
 
 /**
  * @swagger
- * tags:
- *   name: datos_usuario
- *   description: Operaciones relacionadas con la información del usuario y para modificarlo.
- */
-
-/**
- * @swagger
  * /update-profile:
  *   put:
- *     tags: [datos_usuario]
+ *     tags: [usuario_datos_usuario]
  *     summary: Modifica los datos del perfil del usuario (password, imagen y nombre de usuario).
  *     description: Permite actualizar la contraseña, el nombre de usuario y la imagen de perfil del usuario. Si se proporciona una imagen, esta se sube a Firebase Storage.
  *     requestBody:
@@ -136,13 +129,11 @@ router.put('/update-profile', upload.single('imagen_usuario'), async (req, res) 
   }
 });
 
-
-
 /**
  * @swagger
  * /user:
  *   get:
- *     tags: [datos_usuario]
+ *     tags: [usuario_datos_usuario]
  *     summary: Obtiene los datos combinados de las colecciones PERFIL y PERSONA.
  *     description: Retorna los datos de perfil y persona de un usuario en base a su UID.
  *     parameters:
