@@ -227,4 +227,78 @@ router.post('/derivar-alerta', async (req, res) => {
     }
   });
 
+/**
+ * @swagger
+ * /listar-departamentos:
+ *   get:
+ *     tags: [funcionario_derivar_alerta]
+ *     summary: Obtiene la lista de todos los departamentos.
+ *     description: Retorna una lista de todos los departamentos disponibles.
+ *     responses:
+ *       200:
+ *         description: Lista de departamentos obtenida exitosamente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Departamentos obtenidos exitosamente."
+ *                 departamentos:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id_departamento:
+ *                         type: string
+ *                         example: "RF1gx1AVP8zOG7WZMne5"
+ *                       nombre_departamento:
+ *                         type: string
+ *                         example: "carabineros"
+ *                       numero_telefono:
+ *                         type: string
+ *                         example: "987654321"
+ *                       estado:
+ *                         type: boolean
+ *                         example: true
+ *       404:
+ *         description: No se encontraron departamentos.
+ *       500:
+ *         description: Error interno al obtener los departamentos.
+ */
+router.get('/listar-departamentos', async (req, res) => {
+  try {
+    // Obtener todos los departamentos de la colección
+    const departamentosSnapshot = await db.collection('DEPARTAMENTO').get();
+
+    if (departamentosSnapshot.empty) {
+      return res.status(404).json({
+        message: "No se encontraron departamentos."
+      });
+    }
+
+    // Crear una lista de departamentos
+    const departamentos = [];
+    departamentosSnapshot.forEach(doc => {
+      departamentos.push({
+        id_departamento: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    // Responder con la lista de departamentos
+    return res.status(200).json({
+      message: "Departamentos obtenidos exitosamente.",
+      departamentos
+    });
+  } catch (error) {
+    console.error("Error al obtener los departamentos:", error);
+    return res.status(500).json({
+      message: "Error al obtener los departamentos.",
+      error: error.message,
+    });
+  }
+});
+
 module.exports = router;
