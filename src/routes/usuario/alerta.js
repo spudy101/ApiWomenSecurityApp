@@ -509,7 +509,7 @@ router.get('/ver-contactos', async (req, res) => {
 
 /**
  * @swagger
- * /alertas-usuario/{id_usuario}:
+ * /alertas-usuario:
  *   get:
  *     tags: [usuario_alerta]
  *     summary: Obtiene todas las alertas de un usuario.
