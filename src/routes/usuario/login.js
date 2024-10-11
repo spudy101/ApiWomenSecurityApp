@@ -95,7 +95,7 @@ router.post('/register', async (req, res) => {
       message: "Los campos 'nombre', 'apellido', 'correo', 'password', 'fecha_nacimiento', 'direccion', 'id_comuna' e 'id_genero' son obligatorios.",
     });
   }
-
+ 
   try {
     // Crear el usuario en Firebase Authentication
     const userRecord = await admin.auth().createUser({
