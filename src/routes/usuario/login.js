@@ -105,6 +105,16 @@ router.post('/register', async (req, res) => {
 
     const uid = userRecord.uid;
 
+  } catch (error) {
+    console.error('Error al registrar el usuario:', error);
+    return res.status(500).json({
+      message: 'Error al registrar : Correo duplicado',
+      error: error.message,
+    });
+  }
+
+  try {
+
     // Guardar el perfil del usuario en la colección PERSONA
     await db.collection('PERSONA').doc(uid).set({
       nombre: nombre,
@@ -119,6 +129,7 @@ router.post('/register', async (req, res) => {
       id_persona: uid, // El UID de Firebase Authentication
       id_municipalidad: id_municipalidad || null,
     });
+    
 
     // Asignar tipo de usuario basado en el valor recibido
     let tipoUsuarioAsignado = null;
@@ -162,7 +173,7 @@ router.post('/register', async (req, res) => {
   } catch (error) {
     console.error('Error al registrar el usuario:', error);
     return res.status(500).json({
-      message: 'Error al registrar el usuario.',
+      message: 'Error al registrar el usuario, fallo del sistema, contactar con soporte tecnico',
       error: error.message,
     });
   }
