@@ -206,7 +206,7 @@ router.get('/obtener-alertas', async (req, res) => {
     }
 
     if (alertasSnapshot.empty) {
-      return res.status(404).json({
+      return res.status(200).json({
         message: "No se encontraron alertas."
       });
     }
@@ -385,7 +385,7 @@ router.put('/editar-contacto', async (req, res) => {
     const contactoDoc = await contactoRef.get();
 
     if (!contactoDoc.exists) {
-      return res.status(404).json({ message: `No se encontró el contacto con id: ${id_contacto}` });
+      return res.status(200).json({ message: `No se encontró el contacto con id: ${id_contacto}` });
     }
 
     const datosActualizados = { nombres, apellidos, celular, email };
@@ -441,7 +441,7 @@ router.delete('/borrar-contacto', async (req, res) => {
     const contactoDoc = await contactoRef.get();
 
     if (!contactoDoc.exists) {
-      return res.status(404).json({ message: `No se encontró el contacto con id: ${id_contacto}` });
+      return res.status(200).json({ message: `No se encontró el contacto con id: ${id_contacto}` });
     }
 
     await contactoRef.delete();
@@ -489,7 +489,7 @@ router.get('/ver-contactos', async (req, res) => {
       .get();
 
     if (CONTACTOSnapshot.empty) {
-      return res.status(404).json({ message: `No se encontraron CONTACTO para el usuario con id: ${id_usuario}` });
+      return res.status(200).json({ message: `No se encontraron CONTACTO para el usuario con id: ${id_usuario}` });
     }
 
     const CONTACTO = CONTACTOSnapshot.docs.map(doc => ({
@@ -595,7 +595,7 @@ router.get('/alertas-usuario', async (req, res) => {
       .get();
 
     if (alertasSnapshot.empty) {
-      return res.status(404).json({
+      return res.status(200).json({
         message: `No se encontraron alertas para el usuario con id: ${id_usuario}`
       });
     }

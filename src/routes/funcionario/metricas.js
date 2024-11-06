@@ -294,7 +294,7 @@ router.get('/alertas-derivadas-por-departamento', async (req, res) => {
       const departamentosSnapshot = await db.collection('DEPARTAMENTO').get();
   
       if (departamentosSnapshot.empty) {
-        return res.status(404).json({
+        return res.status(200).json({
           message: "No se encontraron departamentos.",
         });
       }
@@ -384,7 +384,7 @@ router.get('/alertas-mes-actual-por-comuna', async (req, res) => {
         .get();
   
       if (alertasSnapshot.empty) {
-        return res.status(404).json({
+        return res.status(200).json({
           message: "No se encontraron alertas en el mes actual.",
         });
       }
@@ -450,7 +450,7 @@ router.get('/alertas-por-mes', async (req, res) => {
         const alertasSnapshot = await db.collection('ALERTA').get();
     
         if (alertasSnapshot.empty) {
-          return res.status(404).json({
+          return res.status(200).json({
             message: "No se encontraron alertas.",
           });
         }
