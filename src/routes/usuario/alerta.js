@@ -118,7 +118,12 @@ router.post('/guardar-ubicacion', async (req, res) => {
     // Guardar la alerta en Firestore
     const nuevaAlertaRef = db.collection('ALERTA').doc();
     const id_alerta = nuevaAlertaRef.id;
-    const mensaje_nuevo = `${mensaje}. Estimados, mi ubicación actual es ${direccion}, con latitud ${latitud} y longitud ${longitud}. Solicito asistencia urgente o notificación a las autoridades competentes.`;
+    
+    // Construir el enlace de Google Maps con la ubicación
+    const googleMapsLink = `https://www.google.com/maps/search/?api=1&query=${latitud},${longitud}`;
+    
+    // Incluir el enlace en el mensaje de WhatsApp
+    const mensaje_nuevo = `${mensaje}. Estimados, mi ubicación actual es ${direccion} (latitud: ${latitud}, longitud: ${longitud}). Solicito asistencia urgente o notificación a las autoridades competentes. Puedes ver mi ubicación en el siguiente enlace: ${googleMapsLink}`;
 
     const nuevaAlerta = {
       id_alerta,
@@ -143,7 +148,7 @@ router.post('/guardar-ubicacion', async (req, res) => {
       // Enviar WhatsApp a cada contacto
       for (const contacto of contactos) {
         if (contacto.celular) {
-          const mensajeWhatsApp = mensaje_nuevo
+          const mensajeWhatsApp = mensaje_nuevo;
           
           // Enviar mensaje de WhatsApp a través de Twilio
           await client.messages.create({
@@ -207,7 +212,8 @@ router.get('/obtener-alertas', async (req, res) => {
 
     if (alertasSnapshot.empty) {
       return res.status(200).json({
-        message: "No se encontraron alertas."
+        message: "No se encontraron alertas.",
+        alertas: [],
       });
     }
 
@@ -243,7 +249,7 @@ router.get('/obtener-alertas', async (req, res) => {
     }
 
     // Devolver la lista de alertas con la información de ubicación y gravedad
-    return res.status(200).json({ alertas });
+    return res.status(200).json({ alertas: alertas });
   } catch (error) {
     console.error("Error al obtener las alertas:", error);
     return res.status(500).json({
@@ -489,7 +495,7 @@ router.get('/ver-contactos', async (req, res) => {
       .get();
 
     if (CONTACTOSnapshot.empty) {
-      return res.status(200).json({ message: `No se encontraron CONTACTO para el usuario con id: ${id_usuario}` });
+      return res.status(200).json({ message: `No se encontraron CONTACTO para el usuario con id: ${id_usuario}`, CONTACTO: [] });
     }
 
     const CONTACTO = CONTACTOSnapshot.docs.map(doc => ({
@@ -499,7 +505,7 @@ router.get('/ver-contactos', async (req, res) => {
 
     return res.status(200).json({
       message: 'CONTACTO obtenidos exitosamente',
-      CONTACTO
+      CONTACTO: CONTACTO
     });
   } catch (error) {
     console.error("Error al obtener los CONTACTO:", error);
@@ -596,7 +602,7 @@ router.get('/alertas-usuario', async (req, res) => {
 
     if (alertasSnapshot.empty) {
       return res.status(200).json({
-        message: `No se encontraron alertas para el usuario con id: ${id_usuario}`
+        message: `No se encontraron alertas para el usuario con id: ${id_usuario}`, alertasUsuario: []
       });
     }
 
