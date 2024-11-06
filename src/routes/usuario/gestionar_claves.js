@@ -38,7 +38,7 @@ router.get('/listar-gravedades', async (req, res) => {
     // Verificar si existen documentos
     if (gravedadesSnapshot.empty) {
       return res.status(200).json({
-        message: "No se encontraron gravedades."
+        message: "No se encontraron gravedades.", gravedades: []
       });
     }
 
@@ -49,7 +49,7 @@ router.get('/listar-gravedades', async (req, res) => {
     });
 
     // Devolver las gravedades obtenidas
-    return res.status(200).json(gravedades);
+    return res.status(200).json({gravedades: gravedades});
 
   } catch (error) {
     console.error("Error al obtener las gravedades:", error);
@@ -123,7 +123,7 @@ router.get('/obtener-claves-usuario', async (req, res) => {
     // Verificar si existen documentos
     if (clavesSnapshot.empty) {
       return res.status(200).json({
-        message: "No se encontraron claves para el usuario proporcionado."
+        message: "No se encontraron claves para el usuario proporcionado.", clavesConDetalles: []
       });
     }
 
@@ -152,7 +152,7 @@ router.get('/obtener-claves-usuario', async (req, res) => {
     }
 
     // Devolver las claves con detalles
-    return res.status(200).json(clavesConDetalles);
+    return res.status(200).json({clavesConDetalles: clavesConDetalles});
 
   } catch (error) {
     console.error("Error al obtener las claves del usuario:", error);
@@ -452,7 +452,7 @@ router.get('/obtener-mensajes', async (req, res) => {
       // Verificar si existen documentos
       if (mensajesSnapshot.empty) {
         return res.status(200).json({
-          message: "No se encontraron mensajes para la persona proporcionada."
+          message: "No se encontraron mensajes para la persona proporcionada.", mensajes: []
         });
       }
   
@@ -463,7 +463,7 @@ router.get('/obtener-mensajes', async (req, res) => {
       });
   
       // Devolver los mensajes obtenidos
-      return res.status(200).json(mensajes);
+      return res.status(200).json({mensajes: mensajes });
   
     } catch (error) {
       console.error("Error al obtener los mensajes:", error);

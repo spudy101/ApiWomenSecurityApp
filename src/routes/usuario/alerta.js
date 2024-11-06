@@ -212,7 +212,8 @@ router.get('/obtener-alertas', async (req, res) => {
 
     if (alertasSnapshot.empty) {
       return res.status(200).json({
-        message: "No se encontraron alertas."
+        message: "No se encontraron alertas.",
+        alertas: [],
       });
     }
 
@@ -248,7 +249,7 @@ router.get('/obtener-alertas', async (req, res) => {
     }
 
     // Devolver la lista de alertas con la información de ubicación y gravedad
-    return res.status(200).json({ alertas });
+    return res.status(200).json({ alertas: alertas });
   } catch (error) {
     console.error("Error al obtener las alertas:", error);
     return res.status(500).json({
@@ -494,7 +495,7 @@ router.get('/ver-contactos', async (req, res) => {
       .get();
 
     if (CONTACTOSnapshot.empty) {
-      return res.status(200).json({ message: `No se encontraron CONTACTO para el usuario con id: ${id_usuario}` });
+      return res.status(200).json({ message: `No se encontraron CONTACTO para el usuario con id: ${id_usuario}`, CONTACTO: [] });
     }
 
     const CONTACTO = CONTACTOSnapshot.docs.map(doc => ({
@@ -504,7 +505,7 @@ router.get('/ver-contactos', async (req, res) => {
 
     return res.status(200).json({
       message: 'CONTACTO obtenidos exitosamente',
-      CONTACTO
+      CONTACTO: CONTACTO
     });
   } catch (error) {
     console.error("Error al obtener los CONTACTO:", error);
@@ -601,7 +602,7 @@ router.get('/alertas-usuario', async (req, res) => {
 
     if (alertasSnapshot.empty) {
       return res.status(200).json({
-        message: `No se encontraron alertas para el usuario con id: ${id_usuario}`
+        message: `No se encontraron alertas para el usuario con id: ${id_usuario}`, alertasUsuario: []
       });
     }
 
