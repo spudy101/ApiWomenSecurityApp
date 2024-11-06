@@ -77,7 +77,7 @@ router.get('/listar-alertas-hoy', async (req, res) => {
         .get();
   
       if (alertasSnapshot.empty) {
-        return res.status(404).json({
+        return res.status(200).json({
           message: "No se encontraron alertas para el día de hoy."
         });
       }
@@ -197,7 +197,7 @@ router.post('/derivar-alerta', async (req, res) => {
       const alertaDoc = await alertaRef.get();
   
       if (!alertaDoc.exists) {
-        return res.status(404).json({
+        return res.status(200).json({
           message: `No se encontró la alerta con el id: ${id_alerta}`
         });
       }
@@ -273,7 +273,7 @@ router.get('/listar-departamentos', async (req, res) => {
     const departamentosSnapshot = await db.collection('DEPARTAMENTO').get();
 
     if (departamentosSnapshot.empty) {
-      return res.status(404).json({
+      return res.status(200).json({
         message: "No se encontraron departamentos."
       });
     }

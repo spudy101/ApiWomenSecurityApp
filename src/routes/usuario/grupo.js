@@ -159,7 +159,7 @@ router.delete("/eliminar-grupo", async (req, res) => {
     const grupoDoc = await grupoRef.get();
 
     if (!grupoDoc.exists) {
-      return res.status(404).json({ message: `No se encontró el grupo con id: ${id_grupo}` });
+      return res.status(200).json({ message: `No se encontró el grupo con id: ${id_grupo}` });
     }
 
     await grupoRef.update({ estado: false });
@@ -226,7 +226,7 @@ router.put('/editar-grupo', upload.single('imagen'), async (req, res) => {
     const grupoDoc = await grupoRef.get();
 
     if (!grupoDoc.exists) {
-      return res.status(404).json({ message: `No se encontró el grupo con id: ${id_grupo}` });
+      return res.status(200).json({ message: `No se encontró el grupo con id: ${id_grupo}` });
     }
 
     let updateData = { nombre_grupo, color_hex, descripcion };
@@ -289,7 +289,7 @@ router.get('/ver-grupos-creados', async (req, res) => {
       .get();
 
     if (gruposSnapshot.empty) {
-      return res.status(404).json({ message: 'No se encontraron grupos activos para este usuario.' });
+      return res.status(200).json({ message: 'No se encontraron grupos activos para este usuario.' });
     }
 
     const grupos = gruposSnapshot.docs.map(doc => ({
@@ -338,13 +338,13 @@ router.get('/ver-grupos-usuario', async (req, res) => {
       .get();
 
     if (grupoPersonaSnapshot.empty) {
-      return res.status(404).json({ message: 'No se encontraron grupos para este usuario.' });
+      return res.status(200).json({ message: 'No se encontraron grupos para este usuario.' });
     }
 
     const idGrupos = grupoPersonaSnapshot.docs.map(doc => doc.data().id_grupo);
 
     if (idGrupos.length === 0) {
-      return res.status(404).json({ message: 'El usuario no pertenece a ningún grupo.' });
+      return res.status(200).json({ message: 'El usuario no pertenece a ningún grupo.' });
     }
 
     const gruposActivosSnapshot = await db.collection('GRUPO')
@@ -353,7 +353,7 @@ router.get('/ver-grupos-usuario', async (req, res) => {
       .get();
 
     if (gruposActivosSnapshot.empty) {
-      return res.status(404).json({ message: 'No se encontraron grupos activos para este usuario.' });
+      return res.status(200).json({ message: 'No se encontraron grupos activos para este usuario.' });
     }
 
     const gruposActivos = gruposActivosSnapshot.docs.map(doc => ({
@@ -401,7 +401,7 @@ router.get('/grupo-completo', async (req, res) => {
     const grupoDoc = await grupoRef.get();
 
     if (!grupoDoc.exists) {
-      return res.status(404).json({ message: `El grupo con id ${id_grupo} no existe.` });
+      return res.status(200).json({ message: `El grupo con id ${id_grupo} no existe.` });
     }
 
     const grupoData = grupoDoc.data();
@@ -411,13 +411,13 @@ router.get('/grupo-completo', async (req, res) => {
       .get();
 
     if (grupoPersonaSnapshot.empty) {
-      return res.status(404).json({ message: 'No se encontraron miembros para este grupo.' });
+      return res.status(200).json({ message: 'No se encontraron miembros para este grupo.' });
     }
 
     const idUsuarios = grupoPersonaSnapshot.docs.map(doc => doc.data().id_usuario);
 
     if (idUsuarios.length === 0) {
-      return res.status(404).json({ message: 'No hay miembros en este grupo.' });
+      return res.status(200).json({ message: 'No hay miembros en este grupo.' });
     }
 
     const miembros = await Promise.all(idUsuarios.map(async (idUsuario) => {
@@ -497,7 +497,7 @@ router.post("/invitar-usuario", upload.none(), async (req, res) => {
     const usuarioSnapshot = await db.collection("PERSONA").where("numero_telefono", "==", celular).get();
 
     if (usuarioSnapshot.empty) {
-      return res.status(404).json({ message: "No se encontró un usuario con el número de teléfono proporcionado" });
+      return res.status(200).json({ message: "No se encontró un usuario con el número de teléfono proporcionado" });
     }
 
     const usuarioDoc = usuarioSnapshot.docs[0];
@@ -509,7 +509,7 @@ router.post("/invitar-usuario", upload.none(), async (req, res) => {
       .get();
 
     if (!grupoPersonaSnapshot.empty) {
-      return res.status(400).json({ message: "El usuario ya pertenece a este grupo" });
+      return res.status(200).json({ message: "El usuario ya pertenece a este grupo" });
     }
 
     const invitacionSnapshot = await db.collection("InvitacionGrupo")
@@ -520,7 +520,7 @@ router.post("/invitar-usuario", upload.none(), async (req, res) => {
       .get();
 
     if (!invitacionSnapshot.empty) {
-      return res.status(400).json({ message: "Ya existe una invitación pendiente para este usuario en este grupo" });
+      return res.status(200).json({ message: "Ya existe una invitación pendiente para este usuario en este grupo" });
     }
 
     const invitacionRef = db.collection("InvitacionGrupo").doc();
@@ -583,7 +583,7 @@ router.get('/ver-invitaciones', async (req, res) => {
       .get();
 
     if (invitacionesSnapshot.empty) {
-      return res.status(404).json({ message: "No se encontraron invitaciones pendientes para este usuario." });
+      return res.status(200).json({ message: "No se encontraron invitaciones pendientes para este usuario." });
     }
 
     const invitaciones = invitacionesSnapshot.docs.map(doc => ({
@@ -646,7 +646,7 @@ router.post("/responder-invitacion", upload.none(), async (req, res) => {
     const invitacionDoc = await invitacionRef.get();
 
     if (!invitacionDoc.exists) {
-      return res.status(404).json({ message: "No se encontró la invitación" });
+      return res.status(200).json({ message: "No se encontró la invitación" });
     }
 
     const invitacionData = invitacionDoc.data();
@@ -748,7 +748,7 @@ router.post("/grupo/eliminar-usuario", upload.none(), async (req, res) => {
       .get();
 
     if (grupoPersonaSnapshot.empty) {
-      return res.status(404).json({ message: "El usuario no pertenece a este grupo o ya ha sido eliminado" });
+      return res.status(200).json({ message: "El usuario no pertenece a este grupo o ya ha sido eliminado" });
     }
 
     const batch = db.batch();

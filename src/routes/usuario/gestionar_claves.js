@@ -37,7 +37,7 @@ router.get('/listar-gravedades', async (req, res) => {
 
     // Verificar si existen documentos
     if (gravedadesSnapshot.empty) {
-      return res.status(404).json({
+      return res.status(200).json({
         message: "No se encontraron gravedades."
       });
     }
@@ -122,7 +122,7 @@ router.get('/obtener-claves-usuario', async (req, res) => {
 
     // Verificar si existen documentos
     if (clavesSnapshot.empty) {
-      return res.status(404).json({
+      return res.status(200).json({
         message: "No se encontraron claves para el usuario proporcionado."
       });
     }
@@ -301,7 +301,7 @@ router.put('/editar-clave', async (req, res) => {
 
     // Verificar si la clave existe
     if (!claveDoc.exists) {
-      return res.status(404).json({
+      return res.status(200).json({
         message: "Clave no encontrada."
       });
     }
@@ -372,7 +372,7 @@ router.delete('/eliminar-clave', async (req, res) => {
 
     // Verificar si la clave existe
     if (!claveDoc.exists) {
-      return res.status(404).json({
+      return res.status(200).json({
         message: "Clave no encontrada."
       });
     }
@@ -451,7 +451,7 @@ router.get('/obtener-mensajes', async (req, res) => {
   
       // Verificar si existen documentos
       if (mensajesSnapshot.empty) {
-        return res.status(404).json({
+        return res.status(200).json({
           message: "No se encontraron mensajes para la persona proporcionada."
         });
       }
@@ -601,7 +601,7 @@ router.delete('/eliminar-mensaje', async (req, res) => {
 
     // Verificar si el mensaje existe
     if (!mensajeDoc.exists) {
-      return res.status(404).json({
+      return res.status(200).json({
         message: "Mensaje no encontrado."
       });
     }
@@ -713,7 +713,7 @@ router.put('/editar-mensaje', async (req, res) => {
 
     // Verificar si el mensaje existe
     if (!mensajeDoc.exists) {
-      return res.status(404).json({
+      return res.status(200).json({
         message: "Mensaje no encontrado."
       });
     }

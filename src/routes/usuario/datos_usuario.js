@@ -192,7 +192,7 @@ router.get('/user', async (req, res) => {
     const personaDoc = await personaRef.get();
 
     if (!personaDoc.exists) {
-      return res.status(404).json({ message: "Usuario no encontrado en PERSONA." });
+      return res.status(200).json({ message: "Usuario no encontrado en PERSONA." });
     }
 
     // Obtener datos de la colección PERFIL
@@ -200,7 +200,7 @@ router.get('/user', async (req, res) => {
     const perfilDoc = await perfilRef.get();
 
     if (!perfilDoc.exists) {
-      return res.status(404).json({ message: "Usuario no encontrado en PERFIL." });
+      return res.status(200).json({ message: "Usuario no encontrado en PERFIL." });
     }
 
     // Combinar los datos de PERSONA y PERFIL
