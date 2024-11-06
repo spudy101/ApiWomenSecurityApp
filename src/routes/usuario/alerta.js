@@ -118,7 +118,12 @@ router.post('/guardar-ubicacion', async (req, res) => {
     // Guardar la alerta en Firestore
     const nuevaAlertaRef = db.collection('ALERTA').doc();
     const id_alerta = nuevaAlertaRef.id;
-    const mensaje_nuevo = `${mensaje}. Estimados, mi ubicación actual es ${direccion}, con latitud ${latitud} y longitud ${longitud}. Solicito asistencia urgente o notificación a las autoridades competentes.`;
+    
+    // Construir el enlace de Google Maps con la ubicación
+    const googleMapsLink = `https://www.google.com/maps/search/?api=1&query=${latitud},${longitud}`;
+    
+    // Incluir el enlace en el mensaje de WhatsApp
+    const mensaje_nuevo = `${mensaje}. Estimados, mi ubicación actual es ${direccion} (latitud: ${latitud}, longitud: ${longitud}). Solicito asistencia urgente o notificación a las autoridades competentes. Puedes ver mi ubicación en el siguiente enlace: ${googleMapsLink}`;
 
     const nuevaAlerta = {
       id_alerta,
@@ -143,7 +148,7 @@ router.post('/guardar-ubicacion', async (req, res) => {
       // Enviar WhatsApp a cada contacto
       for (const contacto of contactos) {
         if (contacto.celular) {
-          const mensajeWhatsApp = mensaje_nuevo
+          const mensajeWhatsApp = mensaje_nuevo;
           
           // Enviar mensaje de WhatsApp a través de Twilio
           await client.messages.create({
