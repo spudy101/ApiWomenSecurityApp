@@ -49,6 +49,7 @@ const admin_municipalidadRoutes = require('./routes/admin/admin_municipalidad.js
 const admin_departamentoRoutes = require('./routes/admin/admin_departamento.js');
 const admin_comunaRoutes = require('./routes/admin/admin_comuna.js');
 const admin_generoRoutes = require('./routes/admin/admin_genero.js');
+const ubicacion_actualRoutes = require('./routes/usuario/ubicacion_actual.js');
 
 app.use('/api', loginRoutes);  // Rutas del archivo login.js
 app.use('/api', datos_usuarioRoutes);  // Rutas del archivo usuarios.js
@@ -63,6 +64,7 @@ app.use('/api', admin_municipalidadRoutes);
 app.use('/api', admin_departamentoRoutes);
 app.use('/api', admin_comunaRoutes);
 app.use('/api', admin_generoRoutes);
+app.use('/api', ubicacion_actualRoutes);
 
 // Puerto del servidor
 app.set('port', process.env.PORT || 3000);
