@@ -239,7 +239,6 @@ router.get('/listar-ubicacion-actual', async (req, res) => {
       });
     }
 });
-});
   
 /**
  * @swagger
@@ -420,8 +419,7 @@ router.post('/actualizar-ubicacion', async (req, res) => {
         });
     }
 });
-});
-      
+  
 /**
  * @swagger
  * /actualizar-ubicacion-seleccion:
