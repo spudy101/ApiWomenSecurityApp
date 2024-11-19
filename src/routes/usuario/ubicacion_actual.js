@@ -239,6 +239,7 @@ router.get('/listar-ubicacion-actual', async (req, res) => {
       });
     }
 });
+});
   
 /**
  * @swagger
@@ -418,6 +419,7 @@ router.post('/actualizar-ubicacion', async (req, res) => {
         error: error.message
         });
     }
+});
 });
       
 /**
