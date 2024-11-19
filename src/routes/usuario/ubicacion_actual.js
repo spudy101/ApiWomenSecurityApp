@@ -419,7 +419,7 @@ router.post('/actualizar-ubicacion', async (req, res) => {
         });
     }
 });
-      
+  
 /**
  * @swagger
  * /actualizar-ubicacion-seleccion:
@@ -558,34 +558,6 @@ router.post('/actualizar-ubicacion-seleccion', async (req, res) => {
  *         description: "ID de la persona que hace la solicitud."
  *         required: true
  *         type: string
- *       - name: persona_buscar
- *         in: query
- *         description: "Si se activa (1), busca la persona especificada por `id_persona_buscar`."
- *         required: false
- *         type: integer
- *         enum: [0, 1]
- *       - name: grupo_buscar
- *         in: query
- *         description: "Si se activa (1), busca los miembros del grupo especificado por `id_grupo`."
- *         required: false
- *         type: integer
- *         enum: [0, 1]
- *       - name: todos
- *         in: query
- *         description: "Si se activa (1), busca todos los miembros de todos los grupos a los que pertenece la persona."
- *         required: false
- *         type: integer
- *         enum: [0, 1]
- *       - name: id_persona_buscar
- *         in: query
- *         description: "ID de la persona a buscar si `persona_buscar` está activo."
- *         required: false
- *         type: string
- *       - name: id_grupo
- *         in: query
- *         description: "ID del grupo a buscar si `grupo_buscar` está activo."
- *         required: false
- *         type: string
  *     responses:
  *       200:
  *         description: "Miembros obtenidos exitosamente."
@@ -647,62 +619,43 @@ router.post('/actualizar-ubicacion-seleccion', async (req, res) => {
  *               type: string
  *               example: "Error detallado del servidor."
  */
-router.get('/obtener-ubicacion-seleccion', async (req, res) => {
-  const { id_persona, persona_buscar, grupo_buscar, todos, id_persona_buscar, id_grupo } = req.query;
+router.get('/listar-ubicacion-seleccion', async (req, res) => {
+  const { id_persona } = req.query;
 
   if (!id_persona) {
     return res.status(400).json({ message: "El parámetro 'id_persona' es obligatorio." });
   }
 
   try {
+    // Obtener la configuración actual de UBICACION_SELECCION
+    const ubicacionSnapshot = await db.collection('UBICACION_SELECCION')
+      .where('id_persona', '==', id_persona)
+      .limit(1)
+      .get();
+
+    if (ubicacionSnapshot.empty) {
+      return res.status(404).json({ message: `No se encontró la ubicación seleccionada para la persona con ID ${id_persona}.` });
+    }
+
+    const ubicacionData = ubicacionSnapshot.docs[0].data();
     let idUsuarios = [];
     let tipoActual = '';
+    let tipoNumerico = 0;
+    let idRelacion = null; // Será el id_grupo o id_persona_buscar según el caso
 
-    // Determinamos qué tipo de búsqueda está activa
-    if (persona_buscar == 1) {
-      tipoActual = 1;
-      if (!id_persona_buscar) {
-        return res.status(200).json({ message: "El parámetro 'id_persona_buscar' es obligatorio cuando 'persona_buscar' está activo." });
-      }
-      idUsuarios = [id_persona_buscar];  // Solo la persona buscada
-    } else if (grupo_buscar == 1) {
-      tipoActual = 2;
-      if (!id_grupo) {
-        return res.status(200).json({ message: "El parámetro 'id_grupo' es obligatorio cuando 'grupo_buscar' está activo." });
-      }
+    if (ubicacionData.todos === 1) {
+      // Caso "todos": Obtener todos los grupos del usuario y sus miembros
+      tipoActual = 'todos';
+      tipoNumerico = 3;
 
-      // Obtener todos los miembros del grupo especificado, omitiendo al propio usuario
-      const grupoPersonaSnapshot = await db.collection('GRUPO_PERSONA')
-        .where('id_grupo', '==', id_grupo)
-        .get();
-
-      if (grupoPersonaSnapshot.empty) {
-        return res.status(200).json({
-          message: `El grupo con id ${id_grupo} no tiene miembros.`,
-          miembros: []
-        });
-      }
-
-      idUsuarios = grupoPersonaSnapshot.docs.map(doc => doc.data().id_usuario).filter(id => id !== id_persona);
-    } else if (todos == 1) {
-      tipoActual = 3;
-      
-      // Obtener todos los grupos a los que pertenece la persona
       const gruposSnapshot = await db.collection('GRUPO_PERSONA')
         .where('id_usuario', '==', id_persona)
         .get();
 
-      if (gruposSnapshot.empty) {
-        return res.status(200).json({
-          message: `El usuario con id ${id_persona} no pertenece a ningún grupo.`,
-          miembros: []
-        });
-      }
-
       const idGrupos = gruposSnapshot.docs.map(doc => doc.data().id_grupo);
+
       const miembrosSet = new Set();
-      
-      // Recolectar todos los miembros de esos grupos
+
       for (const idGrupo of idGrupos) {
         const grupoPersonaSnapshot = await db.collection('GRUPO_PERSONA')
           .where('id_grupo', '==', idGrupo)
@@ -713,44 +666,63 @@ router.get('/obtener-ubicacion-seleccion', async (req, res) => {
         });
       }
 
-      idUsuarios = [...miembrosSet].filter(id => id !== id_persona);  // Filtrar al usuario solicitante
+      idUsuarios = [...miembrosSet].filter(id => id !== id_persona);
+
+    } else if (ubicacionData.grupo_buscar === 1) {
+      // Caso "grupo_buscar": Obtener los miembros de un grupo específico
+      tipoActual = 'grupo_buscar';
+      tipoNumerico = 2;
+      idRelacion = ubicacionData.id_grupo;
+
+      const grupoPersonaSnapshot = await db.collection('GRUPO_PERSONA')
+        .where('id_grupo', '==', ubicacionData.id_grupo)
+        .get();
+
+      idUsuarios = grupoPersonaSnapshot.docs
+        .map(doc => doc.data().id_usuario)
+        .filter(id => id !== id_persona);
+
+    } else if (ubicacionData.persona_buscar === 1) {
+      // Caso "persona_buscar": Obtener una persona específica
+      tipoActual = 'persona_buscar';
+      tipoNumerico = 1;
+      idRelacion = ubicacionData.id_persona_buscar;
+
+      idUsuarios = [ubicacionData.id_persona_buscar];
+    } else {
+      return res.status(400).json({ message: 'No se encontró una opción válida de búsqueda en la ubicación seleccionada.' });
     }
 
-    // Obtener los detalles de los miembros seleccionados
+    // Obtener los detalles de los usuarios seleccionados
     const miembros = await Promise.all(idUsuarios.map(async (idUsuario) => {
       const personaRef = db.collection('PERSONA').doc(idUsuario);
       const personaDoc = await personaRef.get();
 
-      if (!personaDoc.exists) return null; // Omitir si no existe la persona
+      if (!personaDoc.exists) return null;
 
-      const personaData = personaDoc.data();
       const perfilRef = db.collection('PERFIL').doc(idUsuario);
       const perfilDoc = await perfilRef.get();
-      
-      // Extraer solo los campos necesarios de persona y perfil
-      const persona = {
-        id_persona: idUsuario,
-        nombre: personaData.nombre,
-        apellido: personaData.apellido,
-        rut: personaData.rut,
-        imagen: personaData.imagen
-      };
 
-      return persona;
+      return {
+        id_usuario: idUsuario,
+        persona: personaDoc.data(),
+        perfil: perfilDoc.exists ? perfilDoc.data() : {}
+      };
     }));
 
-    // Filtrar miembros nulos
     const miembrosFiltrados = miembros.filter(m => m !== null);
 
     return res.status(200).json({
-      message: 'Miembros obtenidos exitosamente.',
-      tipo_actual: tipoActual,  // El tipo de búsqueda que está activo
+      message: 'Datos listados exitosamente según la configuración actual.',
+      tipo_actual: tipoActual,
+      tipo_numerico: tipoNumerico,
+      id_relacion: idRelacion, // Será el id_grupo o id_persona_buscar según el caso
       miembros: miembrosFiltrados
     });
   } catch (error) {
-    console.error('Error al obtener los miembros:', error);
+    console.error('Error al listar los datos:', error);
     return res.status(500).json({
-      message: 'Errr al obtener los miembros de ubicación seleccionada.',
+      message: 'Error al listar los datos según la ubicación seleccionada.',
       error: error.message
     });
   }
