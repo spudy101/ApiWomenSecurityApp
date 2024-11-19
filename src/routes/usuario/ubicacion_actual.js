@@ -633,11 +633,16 @@ router.get('/listar-ubicacion-seleccion', async (req, res) => {
       .limit(1)
       .get();
 
+    let ubicacionData;
+
     if (ubicacionSnapshot.empty) {
-      return res.status(404).json({ message: `No se encontró la ubicación seleccionada para la persona con ID ${id_persona}.` });
+      // Si no hay datos, asumimos que "todos" está en 1
+      ubicacionData = { todos: 1 };
+    } else {
+      // Si hay datos, tomamos la información del primer documento
+      ubicacionData = ubicacionSnapshot.docs[0].data();
     }
 
-    const ubicacionData = ubicacionSnapshot.docs[0].data();
     let idUsuarios = [];
     let tipoActual = '';
     let tipoNumerico = 0;
