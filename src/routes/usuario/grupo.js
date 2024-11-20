@@ -162,12 +162,34 @@ router.delete("/eliminar-grupo", async (req, res) => {
       return res.status(200).json({ message: `No se encontró el grupo con id: ${id_grupo}` });
     }
 
+    // Cambiar el estado del grupo a `false`
     await grupoRef.update({ estado: false });
 
-    return res.status(200).json({ message: "Grupo eliminado exitosamente (estado cambiado a false)" });
+    // Buscar registros en `UBICACION_SELECCION` donde `id_grupo` esté seleccionado
+    const ubicacionSeleccionRef = db.collection("UBICACION_SELECCION").where("id_grupo", "==", id_grupo);
+    const ubicacionSnapshot = await ubicacionSeleccionRef.get();
+
+    if (!ubicacionSnapshot.empty) {
+      // Actualizar todos los registros afectados
+      const batch = db.batch();
+      ubicacionSnapshot.forEach((doc) => {
+        batch.update(doc.ref, {
+          id_grupo: null,       // Eliminar la referencia al grupo
+          grupo_buscar: 0       // Desactivar la búsqueda por grupo
+        });
+      });
+      await batch.commit();
+    }
+
+    return res.status(200).json({ 
+      message: "Grupo eliminado exitosamente (estado cambiado a false) y ubicaciones seleccionadas actualizadas." 
+    });
   } catch (error) {
     console.error("Error al eliminar el grupo:", error);
-    return res.status(500).json({ message: "Error al eliminar el grupo", error: error.message });
+    return res.status(500).json({ 
+      message: "Error al eliminar el grupo",
+      error: error.message 
+    });
   }
 });
 

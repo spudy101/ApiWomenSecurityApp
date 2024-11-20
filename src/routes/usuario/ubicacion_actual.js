@@ -476,36 +476,36 @@ router.post('/actualizar-ubicacion-seleccion', async (req, res) => {
       return res.status(400).json({ message: "Los campos 'id_persona' y 'tipo' son obligatorios." });
   }
 
-  // Validar si el tipo es válido (1: persona, 2: grupo, 3: todos)
-  if (![1, 2, 3].includes(tipo)) {
-      return res.status(400).json({ message: "El campo 'tipo' debe ser 1 (persona), 2 (grupo), o 3 (todos)." });
+  // Validar si el tipo es válido (1: persona, 2: grupo, 3: todos, 4: ninguno)
+  if (![1, 2, 3, 4].includes(tipo)) {
+      return res.status(400).json({ message: "El campo 'tipo' debe ser 1 (persona), 2 (grupo), 3 (todos), o 4 (ninguno)." });
   }
 
   // Preparar el objeto que se va a actualizar o crear
   const ubicacionSeleccionData = {
       id_persona,
-      id_grupo: null, // Inicialmente null, será actualizado según el tipo
-      persona_buscar: 0, // Inicialmente 0
-      grupo_buscar: 0,   // Inicialmente 0
-      todos: 0,          // Inicialmente 0
-      id_persona_buscar: null, // Inicialmente null
+      id_grupo: null,        // Inicialmente null
+      persona_buscar: 0,     // Inicialmente 0
+      grupo_buscar: 0,       // Inicialmente 0
+      todos: 0,              // Inicialmente 0
+      id_persona_buscar: null // Inicialmente null
   };
 
   // Configurar el comportamiento basado en el tipo
   switch (tipo) {
-      case 1:
-          // Tipo 1: Buscar persona
-          ubicacionSeleccionData.persona_buscar = 1; // Activar búsqueda de persona
-          ubicacionSeleccionData.id_persona_buscar = id_persona_buscar || id_persona; // Si no se pasa, buscar a la misma persona
+      case 1: // Tipo 1: Buscar persona
+          ubicacionSeleccionData.persona_buscar = 1;
+          ubicacionSeleccionData.id_persona_buscar = id_persona_buscar || id_persona;
           break;
-      case 2:
-          // Tipo 2: Buscar grupo
-          ubicacionSeleccionData.grupo_buscar = 1; // Activar búsqueda de grupo
-          ubicacionSeleccionData.id_grupo = id_grupo; // Establecer el grupo a buscar
+      case 2: // Tipo 2: Buscar grupo
+          ubicacionSeleccionData.grupo_buscar = 1;
+          ubicacionSeleccionData.id_grupo = id_grupo;
           break;
-      case 3:
-          // Tipo 3: Buscar todos
-          ubicacionSeleccionData.todos = 1; // Activar búsqueda en todos los grupos y personas
+      case 3: // Tipo 3: Buscar todos
+          ubicacionSeleccionData.todos = 1;
+          break;
+      case 4: // Tipo 4: Deseleccionar todos
+          // Todos los campos ya están inicializados como deseleccionados (valores predeterminados)
           break;
       default:
           return res.status(400).json({ message: "El valor de 'tipo' es inválido." });
@@ -647,7 +647,9 @@ router.get('/listar-ubicacion-seleccion', async (req, res) => {
     let tipoActual = '';
     let tipoNumerico = 0;
     let idRelacion = null; // Será el id_grupo o id_persona_buscar según el caso
+    let grupoInfo = {}; // Información del grupo
 
+    // Determinar qué tipo está seleccionado
     if (ubicacionData.todos === 1) {
       // Caso "todos": Obtener todos los grupos del usuario y sus miembros
       tipoActual = 'todos';
@@ -687,6 +689,16 @@ router.get('/listar-ubicacion-seleccion', async (req, res) => {
         .map(doc => doc.data().id_usuario)
         .filter(id => id !== id_persona);
 
+      // Obtener información del grupo (nombre y descripción)
+      const grupoRef = db.collection('GRUPO').doc(ubicacionData.id_grupo);
+      const grupoDoc = await grupoRef.get();
+
+      if (grupoDoc.exists) {
+        grupoInfo = {
+          nombre_grupo: grupoDoc.data().nombre_grupo,
+          descripcion: grupoDoc.data().descripcion
+        };
+      }
     } else if (ubicacionData.persona_buscar === 1) {
       // Caso "persona_buscar": Obtener una persona específica
       tipoActual = 'persona_buscar';
@@ -695,7 +707,18 @@ router.get('/listar-ubicacion-seleccion', async (req, res) => {
 
       idUsuarios = [ubicacionData.id_persona_buscar];
     } else {
-      return res.status(400).json({ message: 'No se encontró una opción válida de búsqueda en la ubicación seleccionada.' });
+      // Caso "nada seleccionado"
+      tipoActual = 'nada_seleccionado';
+      tipoNumerico = 4;
+
+      return res.status(200).json({
+        message: 'No hay ningún tipo seleccionado en la configuración actual.',
+        tipo_actual: tipoActual,
+        tipo_numerico: tipoNumerico,
+        id_relacion: idRelacion, // null porque no hay relación seleccionada
+        miembros: [],
+        grupo: {} // Sin información del grupo
+      });
     }
 
     // Obtener los detalles de los usuarios seleccionados
@@ -722,6 +745,7 @@ router.get('/listar-ubicacion-seleccion', async (req, res) => {
       tipo_actual: tipoActual,
       tipo_numerico: tipoNumerico,
       id_relacion: idRelacion, // Será el id_grupo o id_persona_buscar según el caso
+      grupo: grupoInfo,        // Información del grupo (si aplica)
       miembros: miembrosFiltrados
     });
   } catch (error) {
