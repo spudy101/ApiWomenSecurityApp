@@ -1,7 +1,6 @@
 const express = require('express');
-const { db } = require('../../config/firebase');
 const router = express.Router();
-const { admin, db, bucket } = require('../../config/firebase'); // Importamos admin, db y bucket desde firebase.js
+const { db, bucket } = require('../../config/firebase'); // Importamos admin, db y bucket desde firebase.js
 const multer = require('multer');
 const path = require('path');
 
