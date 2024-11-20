@@ -63,7 +63,15 @@ const upload = multer({
  *         description: Error al actualizar el perfil.
  */
 router.put('/update-profile', upload.single('imagen_usuario'), async (req, res) => {
-  const { password, nombre_usuario, uid } = req.body;
+  const {
+    uid,
+    nombre,
+    apellido,
+    numero_telefono,
+    direccion,
+    correo,
+    fecha_nacimiento // Opcional
+  } = req.body;
 
   if (!uid) {
     return res.status(400).json({ message: "El parámetro 'uid' es obligatorio." });
@@ -72,16 +80,13 @@ router.put('/update-profile', upload.single('imagen_usuario'), async (req, res) 
   let updateData = {};
 
   try {
-    // Si se proporciona una nueva contraseña, actualiza en Firebase Authentication
-    if (password) {
-      await admin.auth().updateUser(uid, { password });
-      updateData.password = password;
-    }
-
-    // Si se proporciona un nombre de usuario, actualiza el nombre de usuario
-    if (nombre_usuario) {
-      updateData.nombre_usuario = nombre_usuario;
-    }
+    // Validar y agregar los datos a actualizar
+    if (nombre) updateData.nombre = nombre;
+    if (apellido) updateData.apellido = apellido;
+    if (numero_telefono) updateData.numero_telefono = numero_telefono;
+    if (direccion) updateData.direccion = direccion;
+    if (correo) updateData.correo = correo;
+    if (fecha_nacimiento) updateData.fecha_nacimiento = fecha_nacimiento;
 
     // Si se proporciona una imagen de perfil, súbela a Firebase Storage y actualiza el campo
     if (req.file) {
@@ -95,7 +100,7 @@ router.put('/update-profile', upload.single('imagen_usuario'), async (req, res) 
       });
 
       stream.on('error', (error) => {
-        console.error("Error al subir la imagen:", error);  // Agregamos logging del error
+        console.error("Error al subir la imagen:", error);
         return res.status(500).json({ message: "Error al subir la imagen.", error: error.message });
       });
 
@@ -104,8 +109,8 @@ router.put('/update-profile', upload.single('imagen_usuario'), async (req, res) 
         const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
         updateData.imagen_usuario = publicUrl;
 
-        // Actualizar la colección PERFIL con los nuevos datos
-        await db.collection('PERFIL').doc(uid).update(updateData);
+        // Actualizar la colección PERSONA con los nuevos datos
+        await db.collection('PERSONA').doc(uid).update(updateData);
 
         return res.status(200).json({
           message: 'Perfil actualizado exitosamente.',
@@ -117,11 +122,15 @@ router.put('/update-profile', upload.single('imagen_usuario'), async (req, res) 
     } else {
       // Si no se subió imagen, solo actualiza los campos disponibles
       if (Object.keys(updateData).length > 0) {
-        await db.collection('PERFIL').doc(uid).update(updateData);
+        await db.collection('PERSONA').doc(uid).update(updateData);
+        return res.status(200).json({
+          message: 'Perfil actualizado exitosamente.',
+        });
+      } else {
+        return res.status(400).json({
+          message: 'No se proporcionaron datos para actualizar.',
+        });
       }
-      return res.status(200).json({
-        message: 'Perfil actualizado exitosamente.',
-      });
     }
   } catch (error) {
     console.error("Error al actualizar el perfil:", error);
@@ -178,7 +187,6 @@ router.put('/update-profile', upload.single('imagen_usuario'), async (req, res) 
  *       500:
  *         description: Error al obtener los datos del usuario.
  */
-// Ruta para obtener los datos de un usuario por UID (en query string)
 router.get('/user', async (req, res) => {
   const { uid } = req.query;  // Cambiado para recibir el UID de la query string
 
