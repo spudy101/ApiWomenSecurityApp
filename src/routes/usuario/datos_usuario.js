@@ -225,7 +225,7 @@ router.put('/update-profile', upload.single('imagen_usuario'), async (req, res) 
  *         description: Error al obtener los datos del usuario.
  */
 router.get('/user', async (req, res) => {
-  const { uid } = req.query;  // Cambiado para recibir el UID de la query string
+  const { uid } = req.query; // Recibir el UID como parámetro de la query string
 
   if (!uid) {
     return res.status(400).json({ message: "El parámetro 'uid' es obligatorio." });
@@ -248,10 +248,29 @@ router.get('/user', async (req, res) => {
       return res.status(200).json({ message: "Usuario no encontrado en PERFIL.", usuarioData: [] });
     }
 
-    // Combinar los datos de PERSONA y PERFIL
+    const perfilData = perfilDoc.data();
+
+    // Obtener datos de la colección TIPO_USUARIO usando el tipo_usuario del perfil
+    const tipoUsuarioId = perfilData.tipo_usuario; // ID del tipo de usuario
+    const tipoUsuarioRef = db.collection('TIPO_USUARIO').doc(tipoUsuarioId);
+    const tipoUsuarioDoc = await tipoUsuarioRef.get();
+
+    if (!tipoUsuarioDoc.exists) {
+      return res.status(404).json({
+        message: "No se encontró el tipo de usuario asociado.",
+        usuarioData: [],
+      });
+    }
+
+    const tipoUsuarioData = tipoUsuarioDoc.data();
+
+    // Combinar los datos de PERSONA, PERFIL y TIPO_USUARIO
     const usuarioData = {
       persona: personaDoc.data(),
-      perfil: perfilDoc.data(),
+      perfil: {
+        ...perfilData,
+        tipo_usuario: tipoUsuarioData, // Agregar la descripción completa del tipo de usuario
+      },
     };
 
     // Devolver los datos combinados
