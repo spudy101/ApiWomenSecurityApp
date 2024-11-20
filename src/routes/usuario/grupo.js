@@ -609,7 +609,7 @@ router.get('/ver-invitaciones', async (req, res) => {
       return res.status(200).json({ message: "No se encontraron invitaciones pendientes para este usuario.", invitaciones: [] });
     }
 
-    // Crear una lista de invitaciones y obtener los emisores
+    // Crear una lista de invitaciones y obtener los emisores y grupos
     const invitaciones = await Promise.all(invitacionesSnapshot.docs.map(async (doc) => {
       const invitacion = {
         id_InvitacionGrupo: doc.id,
@@ -632,6 +632,24 @@ router.get('/ver-invitaciones', async (req, res) => {
         }
       } else {
         invitacion.emisor = { nombre: "Desconocido", apellido: "" }; // Si no hay id_usuario_emisor
+      }
+
+      // Obtener el nombre y descripción del grupo (id_grupo)
+      if (invitacion.id_grupo) {
+        const grupoRef = db.collection("GRUPO").doc(invitacion.id_grupo);
+        const grupoDoc = await grupoRef.get();
+
+        if (grupoDoc.exists) {
+          const grupoData = grupoDoc.data();
+          invitacion.grupo = {
+            nombre_grupo: grupoData.nombre_grupo,
+            descripcion: grupoData.descripcion
+          };
+        } else {
+          invitacion.grupo = { nombre_grupo: "Desconocido", descripcion: "" }; // Si no se encuentra el grupo
+        }
+      } else {
+        invitacion.grupo = { nombre_grupo: "Desconocido", descripcion: "" }; // Si no hay id_grupo
       }
 
       return invitacion;
