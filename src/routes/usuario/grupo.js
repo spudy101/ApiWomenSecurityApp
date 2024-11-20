@@ -598,6 +598,7 @@ router.get('/ver-invitaciones', async (req, res) => {
   }
 
   try {
+    // Obtener las invitaciones pendientes para el usuario
     const invitacionesSnapshot = await db.collection("InvitacionGrupo")
       .where("id_usuario", "==", id_usuario)
       .where("estado", "==", true)
@@ -608,9 +609,32 @@ router.get('/ver-invitaciones', async (req, res) => {
       return res.status(200).json({ message: "No se encontraron invitaciones pendientes para este usuario.", invitaciones: [] });
     }
 
-    const invitaciones = invitacionesSnapshot.docs.map(doc => ({
-      id_InvitacionGrupo: doc.id,
-      ...doc.data()
+    // Crear una lista de invitaciones y obtener los emisores
+    const invitaciones = await Promise.all(invitacionesSnapshot.docs.map(async (doc) => {
+      const invitacion = {
+        id_InvitacionGrupo: doc.id,
+        ...doc.data()
+      };
+
+      // Obtener el nombre y apellido del usuario emisor (id_usuario_emisor)
+      if (invitacion.id_usuario_emisor) {
+        const personaRef = db.collection("PERSONA").doc(invitacion.id_usuario_emisor);
+        const personaDoc = await personaRef.get();
+
+        if (personaDoc.exists) {
+          const personaData = personaDoc.data();
+          invitacion.emisor = {
+            nombre: personaData.nombre,
+            apellido: personaData.apellido
+          };
+        } else {
+          invitacion.emisor = { nombre: "Desconocido", apellido: "" }; // Si no se encuentra el emisor
+        }
+      } else {
+        invitacion.emisor = { nombre: "Desconocido", apellido: "" }; // Si no hay id_usuario_emisor
+      }
+
+      return invitacion;
     }));
 
     return res.status(200).json({
