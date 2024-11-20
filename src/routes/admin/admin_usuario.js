@@ -165,7 +165,7 @@ router.put('/desactivar-perfil', async (req, res) => {
         error: error.message,
       });
     }
-  });
+});
   
 /**
  * @swagger
@@ -282,8 +282,78 @@ router.put('/editar-perfil', async (req, res) => {
         error: error.message,
       });
     }
-  });
+});
   
+/**
+ * @swagger
+ * /activar-perfil:
+ *   put:
+ *     tags: [admin_persona]
+ *     summary: Activa un perfil cambiando su estado a true.
+ *     description: Activa un perfil de una persona mediante el ID de persona.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - id_persona
+ *             properties:
+ *               id_persona:
+ *                 type: string
+ *                 description: El ID de la persona cuyo perfil se desea activar.
+ *                 example: "2ME9VRJaHwOvqitEOVAHATLy33e2"
+ *     responses:
+ *       200:
+ *         description: Perfil activado exitosamente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Perfil activado exitosamente."
+ *       404:
+ *         description: No se encontró el perfil.
+ *       500:
+ *         description: Error interno al activar el perfil.
+ */
+router.put('/activar-perfil', async (req, res) => {
+  const { id_persona } = req.body;
+
+  if (!id_persona) {
+      return res.status(400).json({
+          message: "El campo 'id_persona' es obligatorio."
+      });
+  }
+
+  try {
+      const perfilRef = db.collection('PERFIL').doc(id_persona);
+      const perfilDoc = await perfilRef.get();
+
+      if (!perfilDoc.exists) {
+          return res.status(404).json({
+              message: `No se encontró el perfil con el id_persona: ${id_persona}`
+          });
+      }
+
+      // Actualizar el estado a true
+      await perfilRef.update({ estado: true });
+
+      return res.status(200).json({
+          message: "Perfil activado exitosamente."
+      });
+  } catch (error) {
+      console.error("Error al activar el perfil:", error);
+      return res.status(500).json({
+          message: "Error al activar el perfil.",
+          error: error.message,
+      });
+  }
+});
+
 
 module.exports = router;
   
