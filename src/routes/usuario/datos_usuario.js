@@ -17,8 +17,8 @@ const upload = multer({
  * /update-profile:
  *   put:
  *     tags: [usuario_datos_usuario]
- *     summary: Modifica los datos del perfil del usuario (password, imagen y nombre de usuario).
- *     description: Permite actualizar la contraseña, el nombre de usuario y la imagen de perfil del usuario. Si se proporciona una imagen, esta se sube a Firebase Storage.
+ *     summary: Modifica los datos del perfil del usuario (nombre, apellido, teléfono, dirección, correo, imagen, etc.).
+ *     description: Permite actualizar el nombre, apellido, número de teléfono, dirección, correo, fecha de nacimiento, imagen de perfil del usuario y otros datos relevantes. Si se proporciona una imagen, esta se sube a Firebase Storage.
  *     requestBody:
  *       required: true
  *       content:
@@ -30,14 +30,31 @@ const upload = multer({
  *                 type: string
  *                 description: El UID del usuario. (Requerido)
  *                 example: "abc123"
- *               password:
+ *               nombre:
  *                 type: string
- *                 description: La nueva contraseña del usuario. (Opcional)
- *                 example: "newpassword123"
- *               nombre_usuario:
+ *                 description: El nuevo nombre del usuario. (Opcional)
+ *                 example: "Juanito"
+ *               apellido:
  *                 type: string
- *                 description: El nuevo nombre de usuario. (Opcional)
- *                 example: "JuanP123"
+ *                 description: El nuevo apellido del usuario. (Opcional)
+ *                 example: "Pérez"
+ *               numero_telefono:
+ *                 type: string
+ *                 description: El nuevo número de teléfono del usuario. (Opcional)
+ *                 example: "123456789"
+ *               direccion:
+ *                 type: string
+ *                 description: La nueva dirección del usuario. (Opcional)
+ *                 example: "Calle Falsa 123"
+ *               correo:
+ *                 type: string
+ *                 description: El nuevo correo electrónico del usuario. (Opcional)
+ *                 example: "juan.perez.nuevo@example.com"
+ *               fecha_nacimiento:
+ *                 type: string
+ *                 format: date
+ *                 description: La nueva fecha de nacimiento del usuario. (Opcional)
+ *                 example: "1990-05-15"
  *               imagen_usuario:
  *                 type: string
  *                 format: binary
@@ -58,9 +75,29 @@ const upload = multer({
  *                   description: URL pública de la nueva imagen (si se subió).
  *                   example: "https://storage.googleapis.com/your-bucket/profile-images/abc123.jpg"
  *       400:
- *         description: No se proporcionaron campos válidos para actualizar.
+ *         description: No se proporcionaron campos válidos para actualizar o faltó el parámetro obligatorio 'uid'.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "El parámetro 'uid' es obligatorio."
  *       500:
  *         description: Error al actualizar el perfil.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Error al actualizar el perfil."
+ *                 error:
+ *                   type: string
+ *                   description: Detalles del error ocurrido.
+ *                   example: "Error de conexión a la base de datos."
  */
 router.put('/update-profile', upload.single('imagen_usuario'), async (req, res) => {
   const {
