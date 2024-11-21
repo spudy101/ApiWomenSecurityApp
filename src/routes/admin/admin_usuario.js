@@ -278,7 +278,6 @@ router.put('/editar-perfil', upload.single('imagen_usuario'), async (req, res) =
     apellido,
     numero_telefono,
     direccion,
-    correo,
     fecha_nacimiento, // Opcional
     nombre_usuario,
   } = req.body;
@@ -297,7 +296,6 @@ router.put('/editar-perfil', upload.single('imagen_usuario'), async (req, res) =
     if (apellido) updateDataPersona.apellido = apellido;
     if (numero_telefono) updateDataPersona.numero_telefono = numero_telefono;
     if (direccion) updateDataPersona.direccion = direccion;
-    if (correo) updateDataPersona.correo = correo;
     if (fecha_nacimiento) updateDataPersona.fecha_nacimiento = fecha_nacimiento;
 
     // Asignar datos a PERFIL
