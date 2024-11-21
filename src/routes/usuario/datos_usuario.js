@@ -101,30 +101,37 @@ const upload = multer({
  */
 router.put('/update-profile', upload.single('imagen_usuario'), async (req, res) => {
   const {
-    uid,
+    uid, // ID del documento en Firestore
     nombre,
     apellido,
     numero_telefono,
     direccion,
-    fecha_nacimiento // Opcional
+    fecha_nacimiento, // Opcional
+    nombre_usuario, // Campo adicional para PERFIL
   } = req.body;
 
   if (!uid) {
     return res.status(400).json({ message: "El parámetro 'uid' es obligatorio." });
   }
 
-  let updateData = {};
+  // Separar los datos para actualizar en cada colección
+  const updateDataPersona = {};
+  const updateDataPerfil = {};
 
   try {
-    // Validar y agregar los datos a actualizar
-    if (nombre) updateData.nombre = nombre;
-    if (apellido) updateData.apellido = apellido;
-    if (numero_telefono) updateData.numero_telefono = numero_telefono;
-    if (direccion) updateData.direccion = direccion;
-    if (correo) updateData.correo = correo;
-    if (fecha_nacimiento) updateData.fecha_nacimiento = fecha_nacimiento;
+    // Asignar datos a PERSONA
+    if (nombre) updateDataPersona.nombre = nombre;
+    if (apellido) updateDataPersona.apellido = apellido;
+    if (numero_telefono) updateDataPersona.numero_telefono = numero_telefono;
+    if (direccion) updateDataPersona.direccion = direccion;
+    if (correo) updateDataPersona.correo = correo;
+    if (fecha_nacimiento) updateDataPersona.fecha_nacimiento = fecha_nacimiento;
 
-    // Si se proporciona una imagen de perfil, súbela a Firebase Storage y actualiza el campo
+    // Asignar datos a PERFIL
+    if (nombre_usuario) updateDataPerfil.nombre_usuario = nombre_usuario;
+    if (correo) updateDataPerfil.correo = correo;
+
+    // Manejar la imagen de perfil
     if (req.file) {
       const fileName = `profile-images/${uid}_${Date.now()}${path.extname(req.file.originalname)}`;
       const file = bucket.file(fileName);
@@ -143,22 +150,40 @@ router.put('/update-profile', upload.single('imagen_usuario'), async (req, res) 
       stream.on('finish', async () => {
         await file.makePublic();
         const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-        updateData.imagen_usuario = publicUrl;
+        updateDataPerfil.imagen_usuario = publicUrl;
 
-        // Actualizar la colección PERSONA con los nuevos datos
-        await db.collection('PERSONA').doc(uid).update(updateData);
+        // Validar si hay campos para actualizar antes de llamar a `update()`
+        const personaPromise = Object.keys(updateDataPersona).length > 0
+          ? db.collection('PERSONA').doc(uid).update(updateDataPersona)
+          : Promise.resolve();
+
+        const perfilPromise = Object.keys(updateDataPerfil).length > 0
+          ? db.collection('PERFIL').doc(uid).update(updateDataPerfil)
+          : Promise.resolve();
+
+        await Promise.all([personaPromise, perfilPromise]);
 
         return res.status(200).json({
           message: 'Perfil actualizado exitosamente.',
-          imageUrl: publicUrl
+          imageUrl: publicUrl,
         });
       });
 
       stream.end(req.file.buffer);
     } else {
-      // Si no se subió imagen, solo actualiza los campos disponibles
-      if (Object.keys(updateData).length > 0) {
-        await db.collection('PERSONA').doc(uid).update(updateData);
+      // Actualizar ambas colecciones si no hay imagen
+      const promises = [];
+
+      if (Object.keys(updateDataPersona).length > 0) {
+        promises.push(db.collection('PERSONA').doc(uid).update(updateDataPersona));
+      }
+
+      if (Object.keys(updateDataPerfil).length > 0) {
+        promises.push(db.collection('PERFIL').doc(uid).update(updateDataPerfil));
+      }
+
+      if (promises.length > 0) {
+        await Promise.all(promises);
         return res.status(200).json({
           message: 'Perfil actualizado exitosamente.',
         });
@@ -170,7 +195,10 @@ router.put('/update-profile', upload.single('imagen_usuario'), async (req, res) 
     }
   } catch (error) {
     console.error("Error al actualizar el perfil:", error);
-    return res.status(500).json({ message: "Error al actualizar el perfil.", error: error.message });
+    return res.status(500).json({
+      message: "Error al actualizar el perfil.",
+      error: error.message,
+    });
   }
 });
 

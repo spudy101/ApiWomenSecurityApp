@@ -273,17 +273,18 @@ router.put('/desactivar-perfil', async (req, res) => {
  */
 router.put('/editar-perfil', upload.single('imagen_usuario'), async (req, res) => {
   const {
-    uid, // ID del documento en Firestore
+    id_persona,
     nombre,
     apellido,
     numero_telefono,
     direccion,
+    correo,
     fecha_nacimiento, // Opcional
-    nombre_usuario, // Campo adicional para PERFIL
+    nombre_usuario,
   } = req.body;
 
-  if (!uid) {
-    return res.status(400).json({ message: "El parámetro 'uid' es obligatorio." });
+  if (!id_persona) {
+    return res.status(400).json({ message: "El parámetro 'id_persona' es obligatorio." });
   }
 
   // Separar los datos para actualizar en cada colección
@@ -301,11 +302,10 @@ router.put('/editar-perfil', upload.single('imagen_usuario'), async (req, res) =
 
     // Asignar datos a PERFIL
     if (nombre_usuario) updateDataPerfil.nombre_usuario = nombre_usuario;
-    if (correo) updateDataPerfil.correo = correo;
 
     // Manejar la imagen de perfil
     if (req.file) {
-      const fileName = `profile-images/${uid}_${Date.now()}${path.extname(req.file.originalname)}`;
+      const fileName = `profile-images/${id_persona}_${Date.now()}${path.extname(req.file.originalname)}`;
       const file = bucket.file(fileName);
 
       const stream = file.createWriteStream({
@@ -325,12 +325,12 @@ router.put('/editar-perfil', upload.single('imagen_usuario'), async (req, res) =
         updateDataPerfil.imagen_usuario = publicUrl;
 
         // Validar si hay campos para actualizar antes de llamar a `update()`
-        const personaPromise = Object.keys(updateDataPersona).length > 0
-          ? db.collection('PERSONA').doc(uid).update(updateDataPersona)
+        const personaPromise = Object.keys(updateDataPersona).length > 0 
+          ? db.collection('PERSONA').doc(id_persona).update(updateDataPersona)
           : Promise.resolve();
 
         const perfilPromise = Object.keys(updateDataPerfil).length > 0
-          ? db.collection('PERFIL').doc(uid).update(updateDataPerfil)
+          ? db.collection('PERFIL').doc(id_persona).update(updateDataPerfil)
           : Promise.resolve();
 
         await Promise.all([personaPromise, perfilPromise]);
@@ -347,11 +347,11 @@ router.put('/editar-perfil', upload.single('imagen_usuario'), async (req, res) =
       const promises = [];
 
       if (Object.keys(updateDataPersona).length > 0) {
-        promises.push(db.collection('PERSONA').doc(uid).update(updateDataPersona));
+        promises.push(db.collection('PERSONA').doc(id_persona).update(updateDataPersona));
       }
 
       if (Object.keys(updateDataPerfil).length > 0) {
-        promises.push(db.collection('PERFIL').doc(uid).update(updateDataPerfil));
+        promises.push(db.collection('PERFIL').doc(id_persona).update(updateDataPerfil));
       }
 
       if (promises.length > 0) {
@@ -367,10 +367,7 @@ router.put('/editar-perfil', upload.single('imagen_usuario'), async (req, res) =
     }
   } catch (error) {
     console.error("Error al actualizar el perfil:", error);
-    return res.status(500).json({
-      message: "Error al actualizar el perfil.",
-      error: error.message,
-    });
+    return res.status(500).json({ message: "Error al actualizar el perfil.", error: error.message });
   }
 });
   
