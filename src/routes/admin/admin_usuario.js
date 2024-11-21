@@ -188,7 +188,7 @@ router.put('/desactivar-perfil', async (req, res) => {
  * @swagger
  * /editar-perfil:
  *   put:
- *     tags: [usuario_datos_usuario]
+ *     tags: [admin_persona]
  *     summary: Modifica los datos del perfil del usuario (nombre, apellido, teléfono, dirección, correo, imagen, etc.).
  *     description: Permite actualizar el nombre, apellido, número de teléfono, dirección, correo, fecha de nacimiento, imagen de perfil del usuario y otros datos relevantes. Si se proporciona una imagen, esta se sube a Firebase Storage.
  *     requestBody:
@@ -271,7 +271,7 @@ router.put('/desactivar-perfil', async (req, res) => {
  *                   description: Detalles del error ocurrido.
  *                   example: "Error de conexión a la base de datos."
  */
-router.put('/update-profile', upload.single('imagen_usuario'), async (req, res) => {
+router.put('/editar-perfil', upload.single('imagen_usuario'), async (req, res) => {
   const {
     uid, // ID del documento en Firestore
     nombre,
