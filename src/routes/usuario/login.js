@@ -338,7 +338,6 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-
     // Autenticar al usuario con la API de Firebase Authentication
     const response = await axios.post(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`, {
       email: correo,
@@ -355,9 +354,9 @@ router.post('/login', async (req, res) => {
     const personaDoc = await personaRef.get();
     const perfilDoc = await perfilRef.get();
 
-    // Verificar si los documentos existen
+    // Verificar si el documento de la persona y perfil existen
     if (!personaDoc.exists || !perfilDoc.exists) {
-      return res.status(200).json({
+      return res.status(404).json({
         message: 'No se encontraron los datos del usuario en las colecciones PERSONA o PERFIL.',
       });
     }
@@ -366,40 +365,18 @@ router.post('/login', async (req, res) => {
 
     // Verificar si el estado del usuario en la colección PERFIL es `true`
     if (perfilData.estado === false) {
-      return res.status(200).json({
+      return res.status(403).json({
         message: 'El usuario tiene restringido el acceso a la plataforma.',
       });
     }
 
-    // Obtener datos de la colección TIPO_USUARIO
-    const tipoUsuarioId = perfilData.tipo_usuario; // ID del tipo de usuario
-    const tipoUsuarioRef = db.collection('TIPO_USUARIO').doc(tipoUsuarioId);
-    const tipoUsuarioDoc = await tipoUsuarioRef.get();
-
-    if (!tipoUsuarioDoc.exists) {
-      return res.status(200).json({
-        message: 'No se encontró el tipo de usuario asociado.',
-      });
-    }
-
-    const tipoUsuarioData = tipoUsuarioDoc.data();
-
-    // Validar si el usuario tiene el tipo requerido (en este caso, "usuario estándar")
-    if (tipoUsuarioData.descripcion !== 'usuario estandar') {
-      return res.status(200).json({
-        message: 'El usuario no tiene permisos para acceder a esta plataforma.',
-      });
-    }
-
-    // Si el tipo de usuario es válido, devolver los datos combinados
+    // Si el estado es `true`, devolver los datos combinados de PERSONA y PERFIL
     return res.status(200).json({
       message: 'Sesión iniciada exitosamente.',
       persona: personaDoc.data(),
-      perfil: {
-        ...perfilData,
-        tipo_usuario: tipoUsuarioData, // Incluir datos del tipo de usuario
-      },
+      perfil: perfilData,
     });
+
   } catch (error) {
     console.error('Error al iniciar sesión:', error);
     return res.status(500).json({
@@ -408,7 +385,6 @@ router.post('/login', async (req, res) => {
     });
   }
 });
-
 
 /**
  * @swagger
