@@ -1,9 +1,15 @@
+require('dotenv').config();
 const express = require('express');
 const router = express.Router();
+require('dotenv').config();
 const { db, bucket } = require('../../config/firebase'); // Importamos admin, db y bucket desde firebase.js
 const multer = require('multer');
+const axios = require('axios');
 const path = require('path');
 
+// Aquí debes poner la API Key de tu proyecto Firebase
+const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
+console.log(FIREBASE_API_KEY)
 
 // Configurar Multer para manejar la subida de archivos
 const upload = multer({
@@ -272,7 +278,6 @@ router.put('/update-profile', upload.single('imagen_usuario'), async (req, res) 
     apellido,
     numero_telefono,
     direccion,
-    correo,
     fecha_nacimiento, // Opcional
     nombre_usuario, // Campo adicional para PERFIL
   } = req.body;
@@ -505,43 +510,44 @@ router.post('/login-admin', async (req, res) => {
   }
 
   try {
-    // Autenticar al usuario con Firebase Authentication
-    const response = await axios.post(
-      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`,
-      {
-        email: correo,
-        password: password,
-        returnSecureToken: true,
-      }
-    );
+    // Autenticar al usuario con la API de Firebase Authentication
+    const response = await axios.post(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`, {
+      email: correo,
+      password: password,
+      returnSecureToken: true,
+    });
 
     const uid = response.data.localId; // El UID del usuario autenticado
 
-    // Buscar los datos del usuario en la colección PERFIL
+    // Buscar los datos del usuario en las colecciones PERSONA y PERFIL
+    const personaRef = db.collection('PERSONA').doc(uid);
     const perfilRef = db.collection('PERFIL').doc(uid);
+
+    const personaDoc = await personaRef.get();
     const perfilDoc = await perfilRef.get();
 
+    
     // Verificar si el documento del perfil existe
     if (!perfilDoc.exists) {
       return res.status(200).json({
         message: 'No se encontró el perfil del usuario.',
       });
     }
-
+    
     const perfilData = perfilDoc.data();
 
-    // Verificar si el estado del usuario es `true`
+    // Verificar si el estado del usuario es true
     if (perfilData.estado === false) {
       return res.status(200).json({
         message: 'El usuario tiene restringido el acceso a la plataforma.',
       });
     }
-
+    
     // Verificar el tipo de usuario en la colección TIPO_USUARIO
     const tipoUsuarioId = perfilData.tipo_usuario; // ID del tipo de usuario
     const tipoUsuarioRef = db.collection('TIPO_USUARIO').doc(tipoUsuarioId);
     const tipoUsuarioDoc = await tipoUsuarioRef.get();
-
+    
     if (!tipoUsuarioDoc.exists) {
       return res.status(200).json({
         message: 'No se encontró el tipo de usuario asociado.',
@@ -549,17 +555,25 @@ router.post('/login-admin', async (req, res) => {
     }
 
     const tipoUsuarioData = tipoUsuarioDoc.data();
-
+    
     // Comprobar si es Admin o Funcionario
     if (tipoUsuarioData.descripcion === 'admin') {
       return res.status(200).json({
-        message: 'Sesión iniciada exitosamente como Administrador.',
-        perfil: perfilData,
+        message: 'Sesión iniciada exitosamente.',
+        persona: personaDoc.data(),
+        perfil: {
+          ...perfilData,
+          tipo_usuario: tipoUsuarioData, // Incluir datos del tipo de usuario
+        },
       });
     } else if (tipoUsuarioData.descripcion === 'Funcionario') {
       return res.status(200).json({
-        message: 'Sesión iniciada exitosamente como Funcionario.',
-        perfil: perfilData,
+        message: 'Sesión iniciada exitosamente.',
+        persona: personaDoc.data(),
+        perfil: {
+          ...perfilData,
+          tipo_usuario: tipoUsuarioData, // Incluir datos del tipo de usuario
+        },
       });
     } else {
       return res.status(200).json({
@@ -574,7 +588,6 @@ router.post('/login-admin', async (req, res) => {
     });
   }
 });
-
 
 module.exports = router;
   

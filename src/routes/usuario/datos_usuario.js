@@ -106,7 +106,6 @@ router.put('/update-profile', upload.single('imagen_usuario'), async (req, res) 
     apellido,
     numero_telefono,
     direccion,
-    correo,
     fecha_nacimiento // Opcional
   } = req.body;
 

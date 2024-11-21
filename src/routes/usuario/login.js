@@ -338,15 +338,13 @@ router.post('/login', async (req, res) => {
   }
 
   try {
+
     // Autenticar al usuario con la API de Firebase Authentication
-    const response = await axios.post(
-      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`,
-      {
-        email: correo,
-        password: password,
-        returnSecureToken: true,
-      }
-    );
+    const response = await axios.post(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`, {
+      email: correo,
+      password: password,
+      returnSecureToken: true,
+    });
 
     const uid = response.data.localId; // El UID del usuario autenticado
 
