@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const router = express.Router();
 require('dotenv').config();
-const { db, bucket } = require('../../config/firebase'); // Importamos admin, db y bucket desde firebase.js
+const { admin, db, bucket } = require('../../config/firebase'); // Importamos admin, db y bucket desde firebase.js
 const multer = require('multer');
 const axios = require('axios');
 const path = require('path');
@@ -231,6 +231,14 @@ router.put('/desactivar-perfil', async (req, res) => {
  *                 type: string
  *                 format: binary
  *                 description: La nueva imagen de perfil del usuario. (Opcional)
+ *               nombre_usuario:
+ *                 type: string
+ *                 description: El nuevo nombre de usuario. (Opcional)
+ *                 example: "juanito_perez"
+ *               password:
+ *                 type: string
+ *                 description: La nueva contraseña del usuario. (Opcional)
+ *                 example: "nueva_contraseña_segura"
  *     responses:
  *       200:
  *         description: Perfil actualizado exitosamente.
@@ -280,6 +288,8 @@ router.put('/editar-perfil', upload.single('imagen_usuario'), async (req, res) =
     direccion,
     fecha_nacimiento, // Opcional
     nombre_usuario,
+    correo,           // Nuevo campo para actualizar el correo
+    password,         // Nuevo campo para actualizar la contraseña
   } = req.body;
 
   if (!id_persona) {
@@ -297,9 +307,12 @@ router.put('/editar-perfil', upload.single('imagen_usuario'), async (req, res) =
     if (numero_telefono) updateDataPersona.numero_telefono = numero_telefono;
     if (direccion) updateDataPersona.direccion = direccion;
     if (fecha_nacimiento) updateDataPersona.fecha_nacimiento = fecha_nacimiento;
+    if (correo) updateDataPerfil.correo = correo;
 
     // Asignar datos a PERFIL
     if (nombre_usuario) updateDataPerfil.nombre_usuario = nombre_usuario;
+    if (correo) updateDataPerfil.correo = correo;
+    if (password) updateDataPerfil.password = password;
 
     // Manejar la imagen de perfil
     if (req.file) {
@@ -322,8 +335,13 @@ router.put('/editar-perfil', upload.single('imagen_usuario'), async (req, res) =
         const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
         updateDataPerfil.imagen_usuario = publicUrl;
 
-        // Validar si hay campos para actualizar antes de llamar a `update()`
-        const personaPromise = Object.keys(updateDataPersona).length > 0 
+        // Actualizar datos en Firebase Authentication si es necesario
+        if (correo || password) {
+          await updateAuthUser(id_persona, correo, password);
+        }
+
+        // Actualizar las colecciones de Firestore
+        const personaPromise = Object.keys(updateDataPersona).length > 0
           ? db.collection('PERSONA').doc(id_persona).update(updateDataPersona)
           : Promise.resolve();
 
@@ -341,6 +359,11 @@ router.put('/editar-perfil', upload.single('imagen_usuario'), async (req, res) =
 
       stream.end(req.file.buffer);
     } else {
+      // Actualizar datos en Firebase Authentication si es necesario
+      if (correo || password) {
+        await updateAuthUser(id_persona, correo, password);
+      }
+
       // Actualizar ambas colecciones si no hay imagen
       const promises = [];
 
@@ -358,6 +381,7 @@ router.put('/editar-perfil', upload.single('imagen_usuario'), async (req, res) =
           message: 'Perfil actualizado exitosamente.',
         });
       } else {
+        console.log("No se proporcionaron datos para actualizar.")
         return res.status(400).json({
           message: 'No se proporcionaron datos para actualizar.',
         });
@@ -368,6 +392,27 @@ router.put('/editar-perfil', upload.single('imagen_usuario'), async (req, res) =
     return res.status(500).json({ message: "Error al actualizar el perfil.", error: error.message });
   }
 });
+
+/**
+ * Función para actualizar datos de autenticación en Firebase Authentication
+ */
+async function updateAuthUser(id_persona, correo, password) {
+  try {
+    const userRecord = await admin.auth().getUser(id_persona);
+
+    // Construir los campos a actualizar
+    const updates = {};
+    if (correo) updates.email = correo;
+    if (password) updates.password = password;
+
+    if (Object.keys(updates).length > 0) {
+      await admin.auth().updateUser(id_persona, updates);
+    }
+  } catch (error) {
+    console.error("Error al actualizar datos en Firebase Authentication:", error);
+    throw new Error("Error al actualizar datos en Firebase Authentication.");
+  }
+}
   
 /**
  * @swagger

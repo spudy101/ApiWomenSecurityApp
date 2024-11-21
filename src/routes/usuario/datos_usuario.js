@@ -59,6 +59,14 @@ const upload = multer({
  *                 type: string
  *                 format: binary
  *                 description: La nueva imagen de perfil del usuario. (Opcional)
+ *               nombre_usuario:
+ *                 type: string
+ *                 description: El nuevo nombre de usuario. (Opcional)
+ *                 example: "juanito_perez"
+ *               password:
+ *                 type: string
+ *                 description: La nueva contraseña del usuario. (Opcional)
+ *                 example: "nueva_contraseña_segura"
  *     responses:
  *       200:
  *         description: Perfil actualizado exitosamente.
@@ -108,6 +116,8 @@ router.put('/update-profile', upload.single('imagen_usuario'), async (req, res) 
     direccion,
     fecha_nacimiento, // Opcional
     nombre_usuario, // Campo adicional para PERFIL
+    correo,
+    password
   } = req.body;
 
   if (!uid) {
@@ -125,13 +135,16 @@ router.put('/update-profile', upload.single('imagen_usuario'), async (req, res) 
     if (numero_telefono) updateDataPersona.numero_telefono = numero_telefono;
     if (direccion) updateDataPersona.direccion = direccion;
     if (fecha_nacimiento) updateDataPersona.fecha_nacimiento = fecha_nacimiento;
+    if (correo) updateDataPerfil.correo = correo;
 
     // Asignar datos a PERFIL
     if (nombre_usuario) updateDataPerfil.nombre_usuario = nombre_usuario;
+    if (correo) updateDataPerfil.correo = correo;
+    if (password) updateDataPerfil.password = password;
 
     // Manejar la imagen de perfil
     if (req.file) {
-      const fileName = `profile-images/${uid}_${Date.now()}${path.extname(req.file.originalname)}`;
+      const fileName = `profile-images/${id_persona}_${Date.now()}${path.extname(req.file.originalname)}`;
       const file = bucket.file(fileName);
 
       const stream = file.createWriteStream({
@@ -150,13 +163,18 @@ router.put('/update-profile', upload.single('imagen_usuario'), async (req, res) 
         const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
         updateDataPerfil.imagen_usuario = publicUrl;
 
-        // Validar si hay campos para actualizar antes de llamar a `update()`
+        // Actualizar datos en Firebase Authentication si es necesario
+        if (correo || password) {
+          await updateAuthUser(id_persona, correo, password);
+        }
+
+        // Actualizar las colecciones de Firestore
         const personaPromise = Object.keys(updateDataPersona).length > 0
-          ? db.collection('PERSONA').doc(uid).update(updateDataPersona)
+          ? db.collection('PERSONA').doc(id_persona).update(updateDataPersona)
           : Promise.resolve();
 
         const perfilPromise = Object.keys(updateDataPerfil).length > 0
-          ? db.collection('PERFIL').doc(uid).update(updateDataPerfil)
+          ? db.collection('PERFIL').doc(id_persona).update(updateDataPerfil)
           : Promise.resolve();
 
         await Promise.all([personaPromise, perfilPromise]);
@@ -169,15 +187,20 @@ router.put('/update-profile', upload.single('imagen_usuario'), async (req, res) 
 
       stream.end(req.file.buffer);
     } else {
+      // Actualizar datos en Firebase Authentication si es necesario
+      if (correo || password) {
+        await updateAuthUser(id_persona, correo, password);
+      }
+
       // Actualizar ambas colecciones si no hay imagen
       const promises = [];
 
       if (Object.keys(updateDataPersona).length > 0) {
-        promises.push(db.collection('PERSONA').doc(uid).update(updateDataPersona));
+        promises.push(db.collection('PERSONA').doc(id_persona).update(updateDataPersona));
       }
 
       if (Object.keys(updateDataPerfil).length > 0) {
-        promises.push(db.collection('PERFIL').doc(uid).update(updateDataPerfil));
+        promises.push(db.collection('PERFIL').doc(id_persona).update(updateDataPerfil));
       }
 
       if (promises.length > 0) {
@@ -186,6 +209,7 @@ router.put('/update-profile', upload.single('imagen_usuario'), async (req, res) 
           message: 'Perfil actualizado exitosamente.',
         });
       } else {
+        console.log("No se proporcionaron datos para actualizar.")
         return res.status(400).json({
           message: 'No se proporcionaron datos para actualizar.',
         });
@@ -193,12 +217,30 @@ router.put('/update-profile', upload.single('imagen_usuario'), async (req, res) 
     }
   } catch (error) {
     console.error("Error al actualizar el perfil:", error);
-    return res.status(500).json({
-      message: "Error al actualizar el perfil.",
-      error: error.message,
-    });
+    return res.status(500).json({ message: "Error al actualizar el perfil.", error: error.message });
   }
 });
+
+/**
+ * Función para actualizar datos de autenticación en Firebase Authentication
+ */
+async function updateAuthUser(id_persona, correo, password) {
+  try {
+    const userRecord = await admin.auth().getUser(id_persona);
+
+    // Construir los campos a actualizar
+    const updates = {};
+    if (correo) updates.email = correo;
+    if (password) updates.password = password;
+
+    if (Object.keys(updates).length > 0) {
+      await admin.auth().updateUser(id_persona, updates);
+    }
+  } catch (error) {
+    console.error("Error al actualizar datos en Firebase Authentication:", error);
+    throw new Error("Error al actualizar datos en Firebase Authentication.");
+  }
+}
 
 /**
  * @swagger
