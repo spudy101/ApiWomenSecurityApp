@@ -9,7 +9,6 @@ const path = require('path');
 
 // Aquí debes poner la API Key de tu proyecto Firebase
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
-console.log(FIREBASE_API_KEY)
 
 // Configurar Multer para manejar la subida de archivos
 const upload = multer({
