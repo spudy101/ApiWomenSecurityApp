@@ -208,22 +208,24 @@ router.post('/register', async (req, res) => {
  */
 router.get('/comunas', async (req, res) => {
   try {
-    const comunasSnapshot = await db.collection('COMUNA').get(); // Obtener la colección COMUNA
+    // Obtener documentos donde estado es true
+    const comunasSnapshot = await db.collection('COMUNA').where('estado', '==', true).get(); 
     if (comunasSnapshot.empty) {
-      return res.status(404).json({ message: 'No se encontraron comunas' });
+      return res.status(404).json({ message: 'No se encontraron comunas con estado true' });
     }
 
     const comunas = [];
     comunasSnapshot.forEach((doc) => {
-      comunas.push({ id: doc.id, ...doc.data() }); // Construir una lista de comunas
+      comunas.push({ id: doc.id, ...doc.data() }); 
     });
 
-    return res.status(200).json(comunas); // Devolver la lista de comunas
+    return res.status(200).json(comunas); 
   } catch (error) {
     console.error('Error al obtener las comunas:', error);
     return res.status(500).json({ message: 'Error al obtener las comunas', error });
   }
 });
+
 
 /**
  * @swagger
@@ -254,22 +256,78 @@ router.get('/comunas', async (req, res) => {
  */
 router.get('/generos', async (req, res) => {
   try {
-    const generosSnapshot = await db.collection('GENERO').get(); // Obtener la colección COMUNA
+    // Obtener documentos donde estado es true
+    const generosSnapshot = await db.collection('GENERO').where('estado', '==', true).get();
     if (generosSnapshot.empty) {
-      return res.status(404).json({ message: 'No se encontraron generos' });
+      return res.status(404).json({ message: 'No se encontraron géneros con estado true' });
     }
 
     const generos = [];
     generosSnapshot.forEach((doc) => {
-      generos.push({ id: doc.id, ...doc.data() }); // Construir una lista de comunas
+      generos.push({ id: doc.id, ...doc.data() });
     });
 
-    return res.status(200).json(generos); // Devolver la lista de comunas
+    return res.status(200).json(generos);
   } catch (error) {
-    console.error('Error al obtener los generos:', error);
-    return res.status(500).json({ message: 'Error al obtener los generos', error });
+    console.error('Error al obtener los géneros:', error);
+    return res.status(500).json({ message: 'Error al obtener los géneros', error });
   }
 });
+
+
+/**
+ * @swagger
+ * /api/municipalidades:
+ *   get:
+ *     summary: Obtiene todas las municipalidades.
+ *     tags: [login]
+ *     description: Retorna una lista de todas las municipalidades con sus respectivos campos.
+ *     responses:
+ *       200:
+ *         description: Lista de municipalidades obtenida exitosamente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 municipalidades:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id_municipalidad:
+ *                         type: string
+ *                         description: ID de la municipalidad.
+ *                       nombre_municipalidad:
+ *                         type: string
+ *                         description: Nombre de la municipalidad.
+ *                       direccion_municipalidad:
+ *                         type: string
+ *                         description: Dirección de la municipalidad.
+ *                       id_comuna:
+ *                         type: string
+ *                         description: ID de la comuna asociada a la municipalidad.
+ *       500:
+ *         description: Error interno al obtener las municipalidades.
+ */
+router.get('/municipalidades', async (req, res) => {
+  try {
+    // Obtener documentos donde estado es true
+    const snapshot = await db.collection('MUNICIPALIDAD').where('estado', '==', true).get();
+
+    if (snapshot.empty) {
+      return res.status(404).json({ message: 'No se encontraron municipalidades con estado true' });
+    }
+
+    const municipalidades = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    return res.status(200).json({ municipalidades });
+  } catch (error) {
+    console.error('Error al obtener las municipalidades:', error);
+    return res.status(500).json({ message: 'Error al obtener las municipalidades', error: error.message });
+  }
+});
+
 
 /**
  * @swagger
@@ -383,62 +441,6 @@ router.post('/login', async (req, res) => {
       message: 'Error al iniciar sesión.',
       error: error.response ? error.response.data.error.message : error.message,
     });
-  }
-});
-
-/**
- * @swagger
- * /api/municipalidades:
- *   get:
- *     summary: Obtiene todas las municipalidades.
- *     tags: [login]
- *     description: Retorna una lista de todas las municipalidades con sus respectivos campos.
- *     responses:
- *       200:
- *         description: Lista de municipalidades obtenida exitosamente.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 municipalidades:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id_municipalidad:
- *                         type: string
- *                         description: ID de la municipalidad.
- *                       nombre_municipalidad:
- *                         type: string
- *                         description: Nombre de la municipalidad.
- *                       direccion_municipalidad:
- *                         type: string
- *                         description: Dirección de la municipalidad.
- *                       id_comuna:
- *                         type: string
- *                         description: ID de la comuna asociada a la municipalidad.
- *       500:
- *         description: Error interno al obtener las municipalidades.
- */
-router.get('/municipalidades', async (req, res) => {
-  try {
-    // Obtener todos los documentos de la colección "MUNICIPALIDAD"
-    const snapshot = await db.collection('MUNICIPALIDAD').get();
-
-    // Verificar si hay documentos en la colección
-    if (snapshot.empty) {
-      return res.status(404).json({ message: 'No se encontraron municipalidades.' });
-    }
-
-    // Crear un arreglo con todas las municipalidades
-    const municipalidades = snapshot.docs.map(doc => doc.data());
-
-    // Devolver la lista de municipalidades
-    return res.status(200).json({ municipalidades });
-  } catch (error) {
-    console.error('Error al obtener las municipalidades:', error);
-    return res.status(500).json({ message: 'Error al obtener las municipalidades', error: error.message });
   }
 });
 
