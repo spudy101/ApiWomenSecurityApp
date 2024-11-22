@@ -87,15 +87,29 @@ const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
  *         description: Error al registrar el usuario.
  */
 router.post('/register', async (req, res) => {
-  const { nombre, apellido, correo, password, fecha_nacimiento, numero_telefono, rut, direccion, id_comuna, tipo_usuario, id_genero, id_municipalidad } = req.body;
+  const {
+    nombre,
+    apellido,
+    correo,
+    password,
+    fecha_nacimiento,
+    numero_telefono,
+    rut,
+    direccion,
+    id_comuna,
+    tipo_usuario,
+    id_genero,
+    id_municipalidad,
+  } = req.body;
 
   // Validación de campos obligatorios
   if (!nombre || !apellido || !correo || !password || !fecha_nacimiento || !direccion || !id_comuna || !id_genero) {
     return res.status(400).json({
-      message: "Los campos 'nombre', 'apellido', 'correo', 'password', 'fecha_nacimiento', 'direccion', 'id_comuna' e 'id_genero' son obligatorios.",
+      message:
+        "Los campos 'nombre', 'apellido', 'correo', 'password', 'fecha_nacimiento', 'direccion', 'id_comuna' e 'id_genero' son obligatorios.",
     });
   }
- 
+
   let uid = 0;
 
   try {
@@ -106,7 +120,6 @@ router.post('/register', async (req, res) => {
     });
 
     uid = userRecord.uid;
-
   } catch (error) {
     console.error('Error al registrar el usuario:', error);
     return res.status(200).json({
@@ -116,7 +129,6 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-
     // Guardar el perfil del usuario en la colección PERSONA
     await db.collection('PERSONA').doc(uid).set({
       nombre: nombre,
@@ -131,7 +143,6 @@ router.post('/register', async (req, res) => {
       id_persona: uid, // El UID de Firebase Authentication
       id_municipalidad: id_municipalidad || null,
     });
-    
 
     // Asignar tipo de usuario basado en el valor recibido
     let tipoUsuarioAsignado = null;
@@ -166,20 +177,27 @@ router.post('/register', async (req, res) => {
       mensaje: mensaje,
     });
 
-    // Respuesta exitosa
+    // Obtener los datos de PERSONA y PERFIL para la respuesta
+    const persona = await db.collection('PERSONA').doc(uid).get();
+    const perfil = await db.collection('PERFIL').doc(uid).get();
+
+    // Respuesta exitosa con datos adicionales
     return res.status(201).json({
       message: 'Usuario registrado exitosamente.',
       uid: uid,
+      persona: persona.exists ? persona.data() : null,
+      perfil: perfil.exists ? perfil.data() : null,
     });
-
   } catch (error) {
     console.error('Error al registrar el usuario:', error);
     return res.status(500).json({
-      message: 'Error al registrar el usuario, fallo del sistema, contactar con soporte tecnico',
+      message:
+        'Error al registrar el usuario, fallo del sistema, contactar con soporte técnico',
       error: error.message,
     });
   }
 });
+
 
 /**
  * @swagger
