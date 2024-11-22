@@ -198,7 +198,6 @@ router.post('/register', async (req, res) => {
   }
 });
 
-
 /**
  * @swagger
  * /comunas:
@@ -246,7 +245,6 @@ router.get('/comunas', async (req, res) => {
   }
 });
 
-
 /**
  * @swagger
  * /generos:
@@ -293,7 +291,6 @@ router.get('/generos', async (req, res) => {
     return res.status(500).json({ message: 'Error al obtener los géneros', error });
   }
 });
-
 
 /**
  * @swagger
@@ -347,7 +344,6 @@ router.get('/municipalidades', async (req, res) => {
     return res.status(500).json({ message: 'Error al obtener las municipalidades', error: error.message });
   }
 });
-
 
 /**
  * @swagger

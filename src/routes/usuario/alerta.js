@@ -188,6 +188,9 @@ router.post('/guardar-ubicacion', async (req, res) => {
  *         description: ID de la alerta para buscar una alerta específica.
  *         schema:
  *           type: string
+ *       - name: id_grupo
+ *         in: query
+ *         required: false
  *     responses:
  *       200:
  *         description: Alerta(s) obtenida(s) exitosamente.
@@ -197,7 +200,7 @@ router.post('/guardar-ubicacion', async (req, res) => {
  *         description: Error al obtener las alertas.
  */
 router.get('/obtener-alertas', async (req, res) => {
-  const { id_alerta } = req.query;
+  const { id_alerta, id_grupo } = req.query;
 
   try {
     let alertasSnapshot;
@@ -205,8 +208,35 @@ router.get('/obtener-alertas', async (req, res) => {
     if (id_alerta) {
       // Buscar una alerta específica por id_alerta
       alertasSnapshot = await db.collection('ALERTA').where('id_alerta', '==', id_alerta).get();
+    } else if (id_grupo) {
+      // Si se proporciona id_grupo, filtrar por usuarios del grupo
+      const grupoPersonaSnapshot = await db.collection('GRUPO_PERSONA')
+        .where('id_grupo', '==', id_grupo)
+        .get();
+
+      if (grupoPersonaSnapshot.empty) {
+        return res.status(200).json({
+          message: `No se encontraron miembros para el grupo con id ${id_grupo}.`,
+          alertas: [],
+        });
+      }
+
+      // Obtener los id_usuario de los miembros del grupo
+      const idUsuarios = grupoPersonaSnapshot.docs.map(doc => doc.data().id_usuario);
+
+      if (idUsuarios.length === 0) {
+        return res.status(200).json({
+          message: `No hay miembros en el grupo con id ${id_grupo}.`,
+          alertas: [],
+        });
+      }
+
+      // Filtrar alertas por id_usuario dentro de los usuarios del grupo
+      alertasSnapshot = await db.collection('ALERTA')
+        .where('id_usuario', 'in', idUsuarios) // "in" permite buscar múltiples valores
+        .get();
     } else {
-      // Obtener todas las alertas
+      // Obtener todas las alertas si no se proporciona id_alerta ni id_grupo
       alertasSnapshot = await db.collection('ALERTA').get();
     }
 
@@ -233,6 +263,7 @@ router.get('/obtener-alertas', async (req, res) => {
       // Agregar la alerta con los datos de ubicación y gravedad
       alertas.push({
         id_alerta: alertaData.id_alerta,
+        id_usuario: alertaData.id_usuario,
         comuna: alertaData.comuna,
         direccion: alertaData.direccion,
         fecha: alertaData.fecha,
@@ -258,6 +289,7 @@ router.get('/obtener-alertas', async (req, res) => {
     });
   }
 });
+
 
 /**
  * @swagger
