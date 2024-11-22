@@ -96,6 +96,8 @@ router.post('/register', async (req, res) => {
     });
   }
  
+  let uid = 0;
+
   try {
     // Crear el usuario en Firebase Authentication
     const userRecord = await admin.auth().createUser({
@@ -103,7 +105,7 @@ router.post('/register', async (req, res) => {
       password: password,
     });
 
-    const uid = userRecord.uid;
+    uid = userRecord.uid;
 
   } catch (error) {
     console.error('Error al registrar el usuario:', error);
