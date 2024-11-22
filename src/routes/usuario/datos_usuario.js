@@ -142,6 +142,8 @@ router.put('/update-profile', upload.single('imagen_usuario'), async (req, res) 
     if (correo) updateDataPerfil.correo = correo;
     if (password) updateDataPerfil.password = password;
 
+    const id_persona = uid
+
     // Manejar la imagen de perfil
     if (req.file) {
       const fileName = `profile-images/${id_persona}_${Date.now()}${path.extname(req.file.originalname)}`;
