@@ -100,7 +100,6 @@ router.post('/guardar-ubicacion', async (req, res) => {
 
     // Obtener comuna y dirección utilizando Google Maps
     const geocodeResponse = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitud},${longitud}&key=${GOOGLE_MAPS_API_KEY}`);
-    
     let comuna = '';
     let direccion = '';
     if (geocodeResponse.data.results.length > 0) {
@@ -111,19 +110,14 @@ router.post('/guardar-ubicacion', async (req, res) => {
       }
       direccion = geocodeResponse.data.results[0].formatted_address;
     }
-
     if (!comuna) comuna = 'Comuna no disponible';
     if (!direccion) direccion = 'Dirección no disponible';
 
     // Guardar la alerta en Firestore
     const nuevaAlertaRef = db.collection('ALERTA').doc();
     const id_alerta = nuevaAlertaRef.id;
-    
-    // Construir el enlace de Google Maps con la ubicación
     const googleMapsLink = `https://www.google.com/maps/search/?api=1&query=${latitud},${longitud}`;
-    
-    // Incluir el enlace en el mensaje de WhatsApp
-    const mensaje_nuevo = `${mensaje}. Estimados, mi ubicación actual es ${direccion} (latitud: ${latitud}, longitud: ${longitud}). Solicito asistencia urgente o notificación a las autoridades competentes. Puedes ver mi ubicación en el siguiente enlace: ${googleMapsLink}`;
+    const mensaje_nuevo = `${mensaje}. Mi ubicación actual es ${direccion} (latitud: ${latitud}, longitud: ${longitud}). Puedes ver mi ubicación en el siguiente enlace: ${googleMapsLink}`;
 
     const nuevaAlerta = {
       id_alerta,
@@ -137,27 +131,52 @@ router.post('/guardar-ubicacion', async (req, res) => {
     };
     await nuevaAlertaRef.set(nuevaAlerta);
 
-    // Buscar los contactos del usuario en la colección 'contactos'
+    // Buscar contactos personales del usuario
     const contactosSnapshot = await db.collection('CONTACTO')
       .where('id_usuario', '==', id_usuario)
       .get();
 
-    if (!contactosSnapshot.empty) {
-      const contactos = contactosSnapshot.docs.map(doc => doc.data());
+    let contactosTelefonos = contactosSnapshot.docs.map(doc => doc.data().celular);
 
-      // Enviar WhatsApp a cada contacto
-      for (const contacto of contactos) {
-        if (contacto.celular) {
-          const mensajeWhatsApp = mensaje_nuevo;
-          
-          // Enviar mensaje de WhatsApp a través de Twilio
-          await client.messages.create({
-            from: `whatsapp:+14155238886`,
-            to: `whatsapp:+56${contacto.celular}`, // Asegúrate de que el número incluya el código del país
-            body: mensajeWhatsApp,
-          });
-          console.log(`Mensaje de WhatsApp enviado a ${contacto.celular}`);
+    // Buscar configuración de grupo en UBICACION_SELECCION
+    const ubicacionSnapshot = await db.collection('UBICACION_SELECCION')
+      .where('id_persona', '==', id_usuario)
+      .limit(1)
+      .get();
+
+    if (!ubicacionSnapshot.empty) {
+      const ubicacionData = ubicacionSnapshot.docs[0].data();
+
+      if (ubicacionData.grupo_buscar === 1) {
+        // Obtener los miembros del grupo desde GRUPO_PERSONA
+        const grupoMiembrosSnapshot = await db.collection('GRUPO_PERSONA')
+          .where('id_grupo', '==', ubicacionData.id_grupo)
+          .get();
+
+        const miembrosGrupoIds = grupoMiembrosSnapshot.docs.map(doc => doc.data().id_usuario);
+
+        // Conectar con PERSONA para obtener `numero_telefono` de cada miembro
+        for (const idPersona of miembrosGrupoIds) {
+          const personaDoc = await db.collection('PERSONA').doc(idPersona).get();
+          if (personaDoc.exists && personaDoc.data().numero_telefono) {
+            contactosTelefonos.push(personaDoc.data().numero_telefono);
+          }
         }
+      }
+    }
+
+    // Eliminar números duplicados
+    const contactosUnicos = [...new Set(contactosTelefonos)];
+
+    // Enviar mensajes de WhatsApp a los números únicos
+    for (const telefono of contactosUnicos) {
+      if (telefono) {
+        await client.messages.create({
+          from: `whatsapp:+14155238886`,
+          to: `whatsapp:+56${telefono}`,
+          body: mensaje_nuevo,
+        });
+        console.log(`Mensaje de WhatsApp enviado a ${telefono}`);
       }
     }
 

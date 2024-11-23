@@ -696,7 +696,8 @@ router.get('/listar-ubicacion-seleccion', async (req, res) => {
       if (grupoDoc.exists) {
         grupoInfo = {
           nombre_grupo: grupoDoc.data().nombre_grupo,
-          descripcion: grupoDoc.data().descripcion
+          descripcion: grupoDoc.data().descripcion,
+          id_creador_grupo: grupoDoc.data().id_usuario,
         };
       }
     } else if (ubicacionData.persona_buscar === 1) {
